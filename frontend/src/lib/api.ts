@@ -774,7 +774,16 @@ export const api = {
       return res;
     }),
 
-  getHealth: (): Promise<{ status: string; database: string; environment: string; demo_mode?: boolean }> =>
+  getHealth: (): Promise<{
+    status: string;
+    database: string;
+    environment: string;
+    demo_mode?: boolean;
+    demo_owner_username?: string;
+    demo_owner_password?: string;
+    demo_staff_username?: string;
+    demo_staff_password?: string;
+  }> =>
     fetchJson("/health"),
 
   getCurrentUser: (): Promise<AuthenticatedUser> => fetchJson("/auth/me"),
