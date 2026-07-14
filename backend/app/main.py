@@ -2043,12 +2043,19 @@ def health_check(db: Session = Depends(get_db)):
     try:
         # Run a simple SELECT 1 query to verify database ping
         db.execute(text("SELECT 1"))
-        return {
+        demo_mode = (os.getenv("DEMO_MODE") == "true") or (os.getenv("ENVIRONMENT") == "demo")
+        res = {
             "status": "healthy",
             "database": "online",
             "environment": os.getenv("ENVIRONMENT", os.getenv("VERCEL_ENV", "development")),
-            "demo_mode": (os.getenv("DEMO_MODE") == "true") or (os.getenv("ENVIRONMENT") == "demo")
+            "demo_mode": demo_mode
         }
+        if demo_mode:
+            res["demo_owner_username"] = os.getenv("DEMO_OWNER_USERNAME", "demo-owner")
+            res["demo_owner_password"] = os.getenv("DEMO_OWNER_PASSWORD", "owner123")
+            res["demo_staff_username"] = os.getenv("DEMO_STAFF_USERNAME", "demo-staff")
+            res["demo_staff_password"] = os.getenv("DEMO_STAFF_PASSWORD", "staff123")
+        return res
     except Exception as e:
         raise HTTPException(
             status_code=503,

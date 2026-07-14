@@ -2,6 +2,23 @@
 
 Welcome to the public portfolio demonstration copy of **H+H Hub** (Handmade+Homemade), a fully-featured, customized Enterprise Resource Planning (ERP) and operations management platform.
 
+### 🌐 [Open Live Demo Application](https://food-operations-erp-demo.vercel.app)
+
+---
+
+## 🔑 Demo Sandbox Access
+
+Experience the active system workflows directly using our dedicated public sandbox credentials:
+
+| Role Account | Username | Passcode | Allowed Scope & Permissions |
+|---|---|---|---|
+| **Demo Owner** | `demo-owner` | `owner123` | **Full access**: Recipe costing, DFS margin analytics, administrative overrides, and system settings. |
+| **Demo Staff** | `demo-staff` | `staff123` | **Restricted operations**: Cost-redacted Station view showing checklists, cooking targets, and pop-up market dispatches. |
+
+> **⚠️ SAFETY WARNINGS**:
+> * **All data is 100% synthetic**: All products, margins, prices, supplier identities, and financial metrics are simulation records and do not reflect any real-world entities.
+> * **Privacy Warning**: This is a public portfolio sandbox and resets regularly. **Do not enter real business or personal information** inside any inputs.
+
 ---
 
 ## ⚠️ Portfolio Sandbox Disclaimer

@@ -13,6 +13,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoCredentials, setDemoCredentials] = useState({
+    ownerUser: "demo-owner",
+    ownerPass: "owner123",
+    staffUser: "demo-staff",
+    staffPass: "staff123"
+  });
   const router = useRouter();
 
   // Load demo mode state and redirect if already logged in
@@ -28,10 +34,41 @@ export default function LoginPage() {
       .then(res => {
         if (res?.demo_mode) {
           setIsDemoMode(true);
+          setDemoCredentials({
+            ownerUser: res.demo_owner_username || "demo-owner",
+            ownerPass: res.demo_owner_password || "owner123",
+            staffUser: res.demo_staff_username || "demo-staff",
+            staffPass: res.demo_staff_password || "staff123"
+          });
         }
       })
       .catch(() => {});
   }, [router]);
+
+  const handlePrefillAndLogin = async (role: "owner" | "staff") => {
+    const user = role === "owner" ? demoCredentials.ownerUser : demoCredentials.staffUser;
+    const pass = role === "owner" ? demoCredentials.ownerPass : demoCredentials.staffPass;
+    
+    setUsername(user);
+    setPassword(pass);
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await api.login(user, pass);
+      try {
+        clearFinancialCaches();
+        localStorage.setItem("hh_logged_in", "true");
+        localStorage.setItem("hh_user_name", res.username);
+        localStorage.setItem("hh_user_role", res.role);
+      } catch {}
+      router.replace("/");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Quick-access login failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,19 +129,45 @@ export default function LoginPage() {
           </div>
 
           {isDemoMode && (
-            <div className="mb-6 p-4 bg-amber-50/80 border border-amber-200/60 rounded-2xl text-xs text-amber-900 font-semibold space-y-1">
-              <p className="text-amber-800 font-black flex items-center gap-1">
-                <Sparkles size={14} className="text-amber-600 animate-pulse" />
-                Public Portfolio Demo Sandbox
-              </p>
-              <p className="text-[11px] text-amber-700/90 font-medium">Explore standard ERP workflows. The sandbox resets regularly.</p>
-              <div className="pt-2 border-t border-amber-150 mt-2 flex flex-col gap-1 text-[11px]">
-                <div>
-                  <span className="text-amber-900 font-bold">Owner:</span> <code className="bg-amber-100/60 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">demo-owner</code> with passcode <code className="bg-amber-100/60 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">owner123</code>
-                </div>
-                <div>
-                  <span className="text-amber-900 font-bold">Staff:</span> <code className="bg-amber-100/60 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">demo-staff</code> with passcode <code className="bg-amber-100/60 px-1 py-0.5 rounded text-amber-900 font-mono font-bold">staff123</code>
-                </div>
+            <div className="mb-6 p-4 bg-amber-50/80 border border-amber-200/60 rounded-2xl text-xs text-amber-900 font-semibold space-y-3.5">
+              <div>
+                <p className="text-amber-800 font-black flex items-center gap-1">
+                  <Sparkles size={14} className="text-amber-600 animate-pulse" />
+                  Public Portfolio Demo Sandbox
+                </p>
+                <p className="text-[11px] text-amber-700/90 font-medium mt-0.5">
+                  Public portfolio sandbox using synthetic data. Changes may reset automatically.
+                </p>
+              </div>
+
+              {/* Role Descriptions */}
+              <div className="space-y-2 text-[11px] leading-relaxed border-t border-amber-200/40 pt-3">
+                <p className="text-amber-850">
+                  <strong className="font-bold text-amber-950">Owner Account:</strong> Full administrative control. View synthetic costing, recursive BOM analyses, net margin trends, and administrative settings.
+                </p>
+                <p className="text-amber-850">
+                  <strong className="font-bold text-amber-950">Staff Account:</strong> Restricted operations view. Costing and margin panels are redacted. Focuses on checklists, schedules, and pop-up retail dispatches.
+                </p>
+              </div>
+
+              {/* Quick-Access Buttons */}
+              <div className="grid grid-cols-2 gap-2 border-t border-amber-200/40 pt-3">
+                <button
+                  type="button"
+                  onClick={() => handlePrefillAndLogin("owner")}
+                  disabled={loading}
+                  className="py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-[10px] text-center uppercase tracking-wide cursor-pointer transition-colors shadow-2xs border border-amber-700/20"
+                >
+                  Explore as Owner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePrefillAndLogin("staff")}
+                  disabled={loading}
+                  className="py-2.5 px-3 bg-[#885625] hover:bg-[#73471e] text-white font-bold rounded-xl text-[10px] text-center uppercase tracking-wide cursor-pointer transition-colors shadow-2xs border border-[#885625]/20"
+                >
+                  Explore as Staff
+                </button>
               </div>
             </div>
           )}

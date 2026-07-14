@@ -23,17 +23,19 @@ def seed_demo_baseline(db: Session):
 
     # 2. Users
     if db.query(models.User).count() == 0:
-        owner_passcode = os.getenv("INITIAL_OWNER_PASSCODE") or "owner123"
-        staff_passcode = os.getenv("INITIAL_STAFF_PASSCODE") or "staff123"
+        owner_username = os.getenv("DEMO_OWNER_USERNAME", "demo-owner")
+        owner_password = os.getenv("DEMO_OWNER_PASSWORD", "owner123")
+        staff_username = os.getenv("DEMO_STAFF_USERNAME", "demo-staff")
+        staff_password = os.getenv("DEMO_STAFF_PASSWORD", "staff123")
         
-        hashed_owner = auth.get_password_hash(owner_passcode)
-        hashed_staff = auth.get_password_hash(staff_passcode)
+        hashed_owner = auth.get_password_hash(owner_password)
+        hashed_staff = auth.get_password_hash(staff_password)
 
         users = [
             models.User(username="owner", hashed_password=hashed_owner, role="owner", is_active=True),
             models.User(username="staff", hashed_password=hashed_staff, role="staff", is_active=True),
-            models.User(username="demo-owner", hashed_password=hashed_owner, role="owner", is_active=True),
-            models.User(username="demo-staff", hashed_password=hashed_staff, role="staff", is_active=True),
+            models.User(username=owner_username, hashed_password=hashed_owner, role="owner", is_active=True),
+            models.User(username=staff_username, hashed_password=hashed_staff, role="staff", is_active=True),
         ]
         db.add_all(users)
         db.commit()
@@ -201,6 +203,28 @@ def seed_demo_transactions(db: Session):
     FIFO batches, audit logs) to provide charts and dashboards with beautiful visual completeness.
     """
     print("Seeding dynamic transaction history...")
+
+    # Restore/Verify demo accounts are intact during reset
+    owner_username = os.getenv("DEMO_OWNER_USERNAME", "demo-owner")
+    owner_password = os.getenv("DEMO_OWNER_PASSWORD", "owner123")
+    staff_username = os.getenv("DEMO_STAFF_USERNAME", "demo-staff")
+    staff_password = os.getenv("DEMO_STAFF_PASSWORD", "staff123")
+
+    # Clear and recreate default credentials safely
+    db.query(models.User).filter(models.User.username.in_([owner_username, staff_username, "owner", "staff"])).delete(synchronize_session=False)
+    db.commit()
+
+    hashed_owner = auth.get_password_hash(owner_password)
+    hashed_staff = auth.get_password_hash(staff_password)
+
+    users = [
+        models.User(username="owner", hashed_password=hashed_owner, role="owner", is_active=True),
+        models.User(username="staff", hashed_password=hashed_staff, role="staff", is_active=True),
+        models.User(username=owner_username, hashed_password=hashed_owner, role="owner", is_active=True),
+        models.User(username=staff_username, hashed_password=hashed_staff, role="staff", is_active=True),
+    ]
+    db.add_all(users)
+    db.commit()
 
     # A. Clean dynamic dynamic tables
     db.query(models.MarketEventSaleItem).delete()
