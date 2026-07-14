@@ -1,0 +1,351 @@
+@import "tailwindcss";
+
+html {
+  font-size: 15px; /* slightly smaller default on mobile for better fit */
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 12.5px; /* scales down the entire UI by ~22% on tablets/laptops so more information fits without scrolling and sidebar is visible */
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 13.5px; /* standard laptop scaling */
+  }
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 14.5px; /* large screen scaling */
+  }
+}
+
+/* ============================================================
+   H+H Hub — Brand Design Token System
+   Palette: Handmade+Homemade official brand colors
+   Updated: 2026-07
+   ============================================================
+   Brand Colors Reference:
+     Accent Yellow Gold:  #bc9037
+     Primary Warm Brown:  #885625
+     Cozy Warm Sand BG:   #f4eee3
+   ============================================================ */
+
+:root {
+  --background: #f4eee3;          /* Rich cozy warm sand background — makes white cards POP */
+  --foreground: #2d1f0e;          /* Warm dark brown text */
+  --surface: #ffffff;
+  --border: #dfd5c6;              /* Deeper warm beige border for high-contrast card framing */
+  --border-soft: #eae1d4;         /* Even softer dividers */
+  --muted: #8a7560;               /* Warm muted text */
+  --muted-soft: #b8a898;          /* Extra soft labels */
+  --focus-ring: rgba(136, 86, 37, 0.32);
+  --shadow-sm: 0 1px 2px rgba(45, 31, 14, 0.05), 0 4px 12px rgba(45, 31, 14, 0.04);
+  --shadow-md: 0 8px 24px rgba(45, 31, 14, 0.08);
+}
+
+@theme {
+  /* Primary — warm medium brown #885625 exactly as requested */
+  --color-primary:        #885625;
+  --color-primary-hover:  #6e431d;
+  --color-primary-light:  #fdfaf7;
+
+  /* Accent — golden yellow #bc9037 exactly as requested */
+  --color-accent:         #bc9037;
+  --color-accent-hover:   #9c732c;
+  --color-accent-light:   #faf6ef;
+
+  /* Teal — brand teal #48b8d0 (used sparingly for info/online) */
+  --color-teal:           #48b8d0;
+  --color-teal-light:     #eefafc;
+
+  /* Blush — soft pink #ffcad4 (used for special states) */
+  --color-blush:          #ffcad4;
+  --color-blush-light:    #fff5f7;
+
+  /* Semantic states — kept green/amber/rose but warmed up */
+  --color-success:        #10b981;
+  --color-success-light:  #f0fdf4;
+  --color-warning:        #bc9037;
+  --color-warning-light:  #faf6ef;
+  --color-danger:         #f43f5e;
+  --color-danger-light:   #fff1f2;
+
+  /* Typography — exactly as requested by owner */
+  --font-sans:            "Helvetica Now Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-heading:         "Georgia Pro", Georgia, serif;
+}
+
+/* ============================================================
+   BASE BODY
+   ============================================================ */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(188, 144, 55, 0.24);
+  color: var(--foreground);
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #885625;
+  outline-offset: 3px;
+}
+
+/* ============================================================
+   CARD STYLES — warm borders, not cold slate
+   ============================================================ */
+.modern-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 3px 0 rgba(45, 31, 14, 0.03),
+    0 4px 16px -2px rgba(45, 31, 14, 0.05),
+    0 2px 6px -1px rgba(45, 31, 14, 0.03);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-card:hover {
+  box-shadow:
+    0 2px 8px 0 rgba(45, 31, 14, 0.04),
+    0 10px 25px -5px rgba(45, 31, 14, 0.08),
+    0 4px 12px -2px rgba(45, 31, 14, 0.05);
+  border-color: #c8b89e;
+}
+
+/* ============================================================
+   GLASSMORPHISM
+   ============================================================ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 1px 3px 0 rgba(45, 31, 14, 0.03),
+    0 8px 32px 0 rgba(45, 31, 14, 0.06);
+  border-radius: 16px;
+}
+
+/* ============================================================
+   SCROLLBARS — warm tinted
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e0d5c5;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c8b89e;
+}
+
+/* ============================================================
+   TRANSITION BASELINES
+   ============================================================ */
+a, button, input, select, textarea {
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+/* ============================================================
+   FORM INPUTS — warm palette
+   ============================================================ */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="search"],
+select,
+textarea {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: #faf8f5;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 0.75rem 1rem;
+  min-height: 2.75rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #885625;
+  box-shadow: 0 0 0 4px rgba(136, 86, 37, 0.15);
+}
+
+textarea {
+  height: auto;
+  min-height: 6rem;
+  resize: vertical;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+thead th {
+  color: #6b7280;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scroll-fade-x {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Explicitly style option tags to ensure visibility on all browsers */
+select option {
+  background-color: #ffffff !important;
+  color: #2d1f0e !important;
+}
+
+/* ============================================================
+   UTILITY — touch / mobile optimization
+   ============================================================ */
+.touch-optimize {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+.animate-slide-in {
+  animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(120%); }
+  to   { transform: translateX(0); }
+}
+
+/* ============================================================
+   GLOBAL BRAND PALETTE MAP OVERRIDES (200 IQ CSS Remappers)
+   Maps old hardcoded Tailwind hex strings to the new brand
+   Colors requested: #885625 and #bc9037
+   ============================================================ */
+
+/* Viewport hardcoded bg-[#faf8f5] mapped to the new cozy sand background */
+.bg-\[\#faf8f5\] {
+  background-color: var(--background) !important;
+}
+
+/* 1. Primary Brown Overrides (remapping #7b3e19 -> #885625) */
+.bg-\[\#7b3e19\] {
+  background-color: #885625 !important;
+}
+.hover\:bg-\[\#7b3e19\]:hover {
+  background-color: #6e431d !important;
+}
+.text-\[\#7b3e19\] {
+  color: #885625 !important;
+}
+.hover\:text-\[\#7b3e19\]:hover {
+  color: #6e431d !important;
+}
+.border-\[\#7b3e19\] {
+  border-color: #885625 !important;
+}
+.fill-\[\#7b3e19\] {
+  fill: #885625 !important;
+}
+.stroke-\[\#7b3e19\] {
+  stroke: #885625 !important;
+}
+
+/* 2. Accent Yellow Gold Overrides (remapping #cfaf45 -> #bc9037) */
+.bg-\[\#cfaf45\] {
+  background-color: #bc9037 !important;
+}
+.hover\:bg-\[\#cfaf45\]:hover {
+  background-color: #9c732c !important;
+}
+.text-\[\#cfaf45\] {
+  color: #bc9037 !important;
+}
+.hover\:text-\[\#cfaf45\]:hover {
+  color: #9c732c !important;
+}
+.border-\[\#cfaf45\] {
+  border-color: #bc9037 !important;
+}
