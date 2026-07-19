@@ -332,6 +332,24 @@ def get_market_event(
         raise HTTPException(status_code=404, detail="Market Event not found")
     return compute_event_stats(event, db, current_user.role == "owner")
 
+def get_next_date(base_date_str: str, recurrence: str, index: int) -> str:
+    from datetime import datetime, timedelta
+    import datetime as dt
+    base_date = datetime.strptime(base_date_str, "%Y-%m-%d").date()
+    if recurrence == "weekly":
+        new_date = base_date + timedelta(weeks=index)
+    elif recurrence == "biweekly":
+        new_date = base_date + timedelta(weeks=2 * index)
+    elif recurrence == "monthly":
+        year = base_date.year + (base_date.month + index - 1) // 12
+        month = (base_date.month + index - 1) % 12 + 1
+        day = min(base_date.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+        new_date = dt.date(year, month, day)
+    else:
+        new_date = base_date
+    return new_date.strftime("%Y-%m-%d")
+
+
 @router.post("", response_model=schemas.MarketEventOut)
 def create_market_event(
     payload: schemas.MarketEventCreate,
@@ -408,6 +426,34 @@ def create_market_event(
 
     try:
         db.add(event)
+        
+        # Handle recurrence creation for subsequent occurrences
+        recurrence = payload.recurrence
+        recurrence_count = payload.recurrence_count or 1
+        if recurrence and recurrence != "none" and recurrence_count > 1:
+            if DEMO_MODE:
+                if db.query(models.MarketEvent).count() + recurrence_count - 1 >= 100:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Sandbox table limit reached. In Public Demo Sandbox, the number of market events is capped at 100. Please reset the database."
+                    )
+            for i in range(1, recurrence_count):
+                next_date = get_next_date(payload.event_date, recurrence, i)
+                rec_event = models.MarketEvent(
+                    name=payload.name,
+                    event_date=next_date,
+                    location=payload.location,
+                    staff_assigned=payload.staff_assigned,
+                    notes=payload.notes,
+                    status="Draft",
+                    is_deleted=False,
+                    initial_cash_balance=0.0,
+                    actual_closing_cash=None,
+                    cash_adjustments=0.0,
+                    cash_adjustments_notes=""
+                )
+                db.add(rec_event)
+
         db.flush()
 
         if event.status == "Active":

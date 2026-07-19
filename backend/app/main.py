@@ -6,9 +6,11 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Dict
 from .database import engine, get_db, Base, SessionLocal
 from . import models, schemas, auth
-from .routers import costing, production, consignment, reseller, tasks, gift_sets, market_events
+from .routers import costing, production, consignment, reseller, tasks, gift_sets, market_events, timesheets
 from .routers.costing import clear_costing_cache
 from .services.demo_seeder import seed_demo_baseline, seed_demo_transactions
+from .services.database_login_rate_limiter import db_username_limiter, db_client_limiter
+from .services.login_rate_limiter import username_limiter, client_limiter
 import os
 import logging
 
@@ -499,16 +501,63 @@ app.include_router(reseller.router, dependencies=[Depends(auth.get_current_user)
 app.include_router(tasks.router, dependencies=[Depends(auth.get_current_user)])
 app.include_router(gift_sets.router, dependencies=[Depends(auth.require_owner)])
 app.include_router(market_events.router, dependencies=[Depends(auth.get_current_user)])
+app.include_router(timesheets.router, dependencies=[Depends(auth.get_current_user)])
 
 @app.post("/login", response_model=schemas.LoginResponse)
-def login(payload: schemas.LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(payload: schemas.LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    
+    # Check rate limits (both local in-memory and shared database rate limiters)
+    client_retry = client_limiter.retry_after(client_ip)
+    if client_retry > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Please try again in {client_retry} seconds.",
+            headers={"Retry-After": str(client_retry)}
+        )
+        
+    client_retry_db = db_client_limiter.retry_after(db, client_ip)
+    if client_retry_db > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Please try again in {client_retry_db} seconds.",
+            headers={"Retry-After": str(client_retry_db)}
+        )
+        
+    user_retry = username_limiter.retry_after(payload.username)
+    if user_retry > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Please try again in {user_retry} seconds.",
+            headers={"Retry-After": str(user_retry)}
+        )
+        
+    user_retry_db = db_username_limiter.retry_after(db, payload.username)
+    if user_retry_db > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many login attempts. Please try again in {user_retry_db} seconds.",
+            headers={"Retry-After": str(user_retry_db)}
+        )
+
     user = db.query(models.User).filter(models.User.username == payload.username).first()
     if not user or not auth.verify_password(payload.password, user.hashed_password):
+        client_limiter.record_failure(client_ip)
+        username_limiter.record_failure(payload.username)
+        db_client_limiter.record_failure(db, client_ip)
+        db_username_limiter.record_failure(db, payload.username)
         import time
         time.sleep(1.5) # Timing attack mitigation & brute-force delay throttling
         raise HTTPException(status_code=401, detail="Incorrect username or passcode")
+        
     if not user.is_active:
         raise HTTPException(status_code=401, detail="User account is inactive")
+        
+    # Clear rate limits on success
+    client_limiter.clear(client_ip)
+    username_limiter.clear(payload.username)
+    db_client_limiter.clear(db, client_ip)
+    db_username_limiter.clear(db, payload.username)
         
     token = auth.create_access_token(data={"sub": user.username, "id": user.id, "role": user.role})
     

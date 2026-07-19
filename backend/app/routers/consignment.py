@@ -211,6 +211,18 @@ def record_consignment_delivery(payload: schemas.ConsignmentDeliveryCreate, db: 
     if not partner:
         raise HTTPException(status_code=444, detail="Consignment partner not found")
 
+    # Guard: Validate stock availability for all items to prevent partial dispatching
+    for item in payload.items:
+        product = db.query(models.ProductSKU).filter(models.ProductSKU.sku == item.sku).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product SKU {item.sku} not found")
+        available = product.warehouse_stock or 0
+        if available < item.target_qty:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for SKU {item.sku}. Available: {available}, Requested: {item.target_qty}."
+            )
+
     db_delivery = models.ConsignmentDelivery(
         partner_id=payload.partner_id,
         delivery_date=payload.delivery_date,

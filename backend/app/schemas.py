@@ -334,7 +334,7 @@ class ResellerOrderCreate(BaseModel):
     order_date: Union[str, date] # YYYY-MM-DD
     items: List[ResellerOrderItemCreate] = Field(min_length=1)
     notes: Optional[str] = None
-    tax_rate: float = Field(default=12.0, ge=0.0, le=100.0)
+    tax_rate: float = Field(default=0.0, ge=0.0, le=100.0)
     manual_discount_percentage: Optional[float] = Field(default=None, ge=0.0, le=100.0)
 
     @field_validator("reseller_name")

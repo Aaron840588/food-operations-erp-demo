@@ -121,8 +121,8 @@ def create_reseller_order(payload: schemas.ResellerOrderCreate, db: Session = De
         discount_amt = subtotal * (discount_pct / 100.0)
         tax_rate = payload.tax_rate
         discounted_subtotal = subtotal - discount_amt
-        tax_amt = discounted_subtotal * (tax_rate / 100.0)
-        grand_total = discounted_subtotal + tax_amt
+        grand_total = discounted_subtotal
+        tax_amt = grand_total * tax_rate / (100.0 + tax_rate)
 
         # 3. Build the invoice and all related records in the same transaction.
         db_order = models.ResellerOrder(
@@ -359,3 +359,36 @@ def delete_discount_tier(tier_id: int, db: Session = Depends(get_db)):
     db.delete(tier)
     db.commit()
     return {"message": f"Successfully deleted discount tier #{tier_id}"}
+
+
+@router.delete("/orders/{order_id}", dependencies=[Depends(auth.require_owner), Depends(auth.check_demo_mode)])
+def delete_reseller_order(order_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    """
+    Deletes an existing reseller order.
+    Restores the deducted warehouse stock of the items and logs return transactions.
+    """
+    order = db.query(models.ResellerOrder).filter(models.ResellerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+        
+    for item in order.items:
+        product = db.query(models.ProductSKU).filter(models.ProductSKU.sku == item.sku).first()
+        if product:
+            product.warehouse_stock = (product.warehouse_stock or 0) + item.quantity
+            
+            db.add(models.InventoryTransaction(
+                sku=item.sku,
+                transaction_type="sales_return",
+                qty=float(item.quantity),
+                user_id=current_user.id,
+                batch_reference=f"RESELLER_RETURN-{order.id}",
+                notes=f"Restored stock from deleted reseller order #{order.id} for {order.reseller_name}.",
+            ))
+            
+            from ..database import sync_warehouse_stock_for_main_facility
+            sync_warehouse_stock_for_main_facility(db, sku=item.sku)
+
+    db.delete(order)
+    db.commit()
+    return {"message": f"Successfully deleted reseller order #{order_id}"}
+
