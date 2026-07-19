@@ -10,7 +10,9 @@ import {
   AlertCircle,
   EyeOff,
 } from "lucide-react";
+import { getProductBusinessCategory, toProductTitleCase } from "@/lib/utils";
 import { ProductSizeBadge } from "./ProductSizeBadge";
+
 
 export interface ProductDisplayProps {
   sku: string;
@@ -20,6 +22,9 @@ export interface ProductDisplayProps {
   isActive?: boolean;
   className?: string;
   showCategory?: boolean;
+  showIcon?: boolean;
+  showMissingSize?: boolean;
+  variant?: "default" | "compact" | "selector";
 }
 
 // Stable, deterministic mapping of Lucide icons based on SKU and product name
@@ -63,85 +68,75 @@ export function ProductDisplay({
   isActive = true,
   className = "",
   showCategory = false,
+  showIcon = true,
+  showMissingSize = true,
+  variant = "default",
 }: ProductDisplayProps) {
   const Icon = getProductIcon(sku, productName, category);
-  
+  const businessCategory = getProductBusinessCategory({ sku, product_name: productName, category });
   const hasSize = size && size.trim() !== "" && size.trim() !== "0" && size.trim() !== "0g";
-  const isSandwich = (category || "").toLowerCase().includes("sandwich") || (productName || "").toLowerCase().includes("sandwich");
-  
+  const isSandwich = businessCategory === "Sandwiches & Salads";
+  const normalizedCategory = (category || "").toLowerCase();
+  const isCompact = variant !== "default";
+
   // Clean name if it contains redundant size info
-  const displayName = productName;
-  
-  // Portion determination
-  let portionLabel = "";
-  if (isSandwich) {
-    const nameLower = productName.toLowerCase();
-    const sizeLower = (size || "").toLowerCase();
-    if (nameLower.includes("half") || sizeLower.includes("half") || sizeLower === "hf" || sku.includes("-HF-")) {
-      portionLabel = "Half";
-    } else if (nameLower.includes("full") || sizeLower.includes("full") || sizeLower === "fl" || sku.includes("-FL-")) {
-      portionLabel = "Full";
-    } else if (nameLower.includes("solo") || sizeLower.includes("solo") || sizeLower === "sl" || sku.includes("-SL-")) {
-      portionLabel = "Solo";
-    }
-  }
+  const displayName = toProductTitleCase(productName);
 
   return (
-    <div className={`flex items-center gap-3 select-none ${className} ${!isActive ? "opacity-60" : ""}`}>
+    <div className={`flex min-w-0 items-center ${isCompact ? "gap-2" : "gap-3"} select-none ${className} ${!isActive ? "opacity-60" : ""}`}>
       {/* Deterministic Icon container */}
-      <div 
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-xs transition-colors
-          ${!isActive 
-            ? "bg-stone-150 text-stone-400" 
-            : isSandwich 
-              ? "bg-orange-50 text-orange-700" 
-              : category.toLowerCase().includes("pastr") 
-                ? "bg-amber-50 text-amber-700"
-                : category.toLowerCase().includes("drink") 
-                  ? "bg-rose-50 text-rose-700"
-                  : "bg-emerald-50 text-emerald-700"
-          }`}
-      >
-        {React.createElement(Icon, { size: 16, strokeWidth: 2.5 })}
-      </div>
+      {showIcon && (
+        <div
+          className={`flex shrink-0 items-center justify-center rounded-lg shadow-xs transition-colors ${isCompact ? "h-7 w-7" : "h-8 w-8"}
+            ${!isActive
+              ? "bg-stone-100 text-stone-400"
+              : isSandwich
+                ? "bg-orange-50 text-orange-700"
+                : normalizedCategory.includes("pastr")
+                  ? "bg-amber-50 text-amber-700"
+                  : normalizedCategory.includes("drink")
+                    ? "bg-rose-50 text-rose-700"
+                    : "bg-emerald-50 text-emerald-700"
+            }`}
+        >
+          {React.createElement(Icon, { size: isCompact ? 14 : 16, strokeWidth: 2.5 })}
+        </div>
+      )}
 
       {/* Details column */}
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-sans font-bold text-sm text-stone-900 truncate tracking-tight">
+          <span
+            className={`font-sans font-bold leading-tight text-stone-900 tracking-tight ${variant === "selector" ? "truncate text-xs" : "line-clamp-2 text-sm"}`}
+            title={displayName}
+          >
             {displayName}
           </span>
           {!isActive && (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-stone-100 px-1.5 py-0.2 text-[9px] font-bold text-stone-600 border border-stone-200">
+            <span className="inline-flex items-center gap-0.5 rounded-full border border-stone-200 bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold text-stone-600">
               <EyeOff size={8} /> Inactive
             </span>
           )}
         </div>
         
-        <div className="flex items-center gap-1.5 text-[10px] text-stone-500 flex-wrap mt-0.5">
+        <div className={`flex items-center gap-1.5 text-stone-500 flex-wrap ${isCompact ? "mt-0 text-[9px]" : "mt-0.5 text-[10px]"}`}>
           <span className="font-mono font-bold tracking-wide uppercase bg-stone-100 text-stone-700 px-1 rounded-sm border border-stone-200/60">
             {sku}
           </span>
 
           {showCategory && category && (
-            <span className="text-stone-400 italic">
-              {category}
+            <span className="text-stone-400">
+              {businessCategory}
             </span>
           )}
           
           {hasSize ? (
             <ProductSizeBadge size={size} sku={sku} />
-          ) : (
-            <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.2 font-mono text-[9px] font-black uppercase text-red-700">
+          ) : showMissingSize ? (
+            <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 font-mono text-[9px] font-black uppercase text-red-700">
               <AlertCircle size={9} /> Missing Size
             </span>
-          )}
-
-          {portionLabel && (
-            <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase text-amber-700">
-              {portionLabel}
-            </span>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

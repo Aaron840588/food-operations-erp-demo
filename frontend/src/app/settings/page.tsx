@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { api, type DiscountTierOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/utils";
 import { 
   Settings, 
   Percent, 
@@ -19,6 +20,14 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmationModal } from "@/components/ui/Modal";
+import {
+  DataTableScroll,
+  TableCell,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+} from "@/components/ui/DataTable";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"tiers" | "backup" | "users">("tiers");
@@ -27,6 +36,7 @@ export default function SettingsPage() {
 
   // Discount tiers state
   const [tiers, setTiers] = useState<DiscountTierOut[]>([]);
+  const [tiersError, setTiersError] = useState<string | null>(null);
   const [minSubtotal, setMinSubtotal] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
   const [creatingTier, setCreatingTier] = useState(false);
@@ -46,11 +56,13 @@ export default function SettingsPage() {
   const [resetLoading, setResetLoading] = useState(false);
 
   const fetchTiers = async () => {
+    setTiersError(null);
     try {
       const res = await api.getDiscountTiers();
       setTiers(res);
     } catch (err) {
       console.error(err);
+      setTiersError("Unable to load wholesale discount tiers.");
     }
   };
 
@@ -60,8 +72,7 @@ export default function SettingsPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOwner(role === "owner");
     }
-    fetchTiers();
-    setLoading(false);
+    void fetchTiers().finally(() => setLoading(false));
   }, []);
 
   const handleCreateTier = async (e: React.FormEvent) => {
@@ -195,13 +206,17 @@ export default function SettingsPage() {
         
         {/* Settings Split Navigation */}
         <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-3xl p-4 shadow-xs self-stretch">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" role="tablist" aria-label="Settings sections">
             {menuItems.map(item => {
               const Icon = item.icon;
               const isSelected = activeTab === item.id;
               return (
                 <button
                   key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  aria-controls={`settings-panel-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
                   className={`w-full text-left px-5 py-4 rounded-2xl text-sm font-heading font-bold flex items-center gap-3 transition-all relative border-2 cursor-pointer ${
                     isSelected 
@@ -225,7 +240,7 @@ export default function SettingsPage() {
           
           {/* 1. DISCOUNT TIERS PANEL */}
           {activeTab === "tiers" && (
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+            <div id="settings-panel-tiers" role="tabpanel" className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               
               {/* Discount tier table list */}
               <Card className="xl:col-span-8 rounded-3xl border-slate-200 shadow-sm overflow-hidden">
@@ -234,37 +249,43 @@ export default function SettingsPage() {
                   <CardDescription className="text-sm mt-1 text-slate-500">Automated volume discount ranges calculated during reseller billings:</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 bg-white">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-sm text-slate-700">
+                  <DataTableScroll label="Wholesale discount tiers" className="overflow-x-auto">
+                    <table className="w-full min-w-[460px] text-left border-collapse text-sm text-slate-700">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                          <th className="px-6 py-4">Minimum Purchase (₱)</th>
-                          <th className="px-6 py-4 text-right">Wholesale Discount Percentage</th>
-                          <th className="px-6 py-4 text-right">Delete</th>
-                        </tr>
+                        <TableHeaderRow>
+                          <TableHeaderCell align="right">Minimum Purchase</TableHeaderCell>
+                          <TableHeaderCell align="right">Wholesale Discount Percentage</TableHeaderCell>
+                          <TableHeaderCell align="right">Actions</TableHeaderCell>
+                        </TableHeaderRow>
                       </thead>
                       <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
-                        {tiers.map((tier) => (
-                          <tr key={tier.id} className="hover:bg-slate-50/10">
-                            <td className="px-6 py-4 font-mono font-black text-slate-900 text-base">₱{tier.min_subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                            <td className="px-6 py-4 text-right">
+                        {tiersError ? (
+                          <TableEmptyState colSpan={3} title={tiersError} description="Refresh the page to try again." />
+                        ) : tiers.length === 0 ? (
+                          <TableEmptyState colSpan={3} title="No discount tiers yet" description="Create a tier to enable automatic wholesale discounts." />
+                        ) : tiers.map((tier) => (
+                          <TableRow key={tier.id}>
+                            <TableCell align="right" className="font-mono font-black text-slate-900 text-base">{formatCurrency(tier.min_subtotal)}</TableCell>
+                            <TableCell align="right">
                               <Badge variant="success" className="py-1 px-3 text-xs rounded-xl font-bold bg-emerald-100 text-emerald-800">
                                 {tier.discount_percentage.toFixed(1)}% Discount
                               </Badge>
-                            </td>
-                            <td className="px-6 py-4 text-right">
+                            </TableCell>
+                            <TableCell align="right">
                               <button
+                                type="button"
                                 onClick={() => handleTriggerDeleteTier(tier.id)}
-                                className="text-slate-400 hover:text-danger p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors border border-slate-200"
+                                aria-label={`Delete ${tier.discount_percentage.toFixed(1)} percent discount tier`}
+                                className="inline-flex h-10 w-10 items-center justify-center text-slate-400 hover:text-danger hover:bg-slate-50 rounded-xl cursor-pointer transition-colors border border-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
                               >
                                 <Trash2 size={16} />
                               </button>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                  </DataTableScroll>
                 </CardContent>
               </Card>
 
@@ -277,22 +298,26 @@ export default function SettingsPage() {
                 <CardContent className="p-6 md:p-8">
                   <form onSubmit={handleCreateTier} className="space-y-5">
                     <div>
-                      <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Minimum Subtotal (₱)</label>
+                      <label htmlFor="tier-minimum-subtotal" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Minimum Subtotal (₱)</label>
                       <input
+                        id="tier-minimum-subtotal"
                         type="number"
+                        inputMode="decimal"
                         min={0}
                         step={100}
                         required
                         placeholder="e.g. 5000"
                         value={minSubtotal}
                         onChange={(e) => setMinSubtotal(e.target.value)}
-                        className="w-full text-sm font-mono font-black h-12"
+                        className="quantity-input w-full text-sm font-mono font-black h-12"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Discount Percentage (%)</label>
+                      <label htmlFor="tier-discount-percentage" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Discount Percentage (%)</label>
                       <input
+                        id="tier-discount-percentage"
                         type="number"
+                        inputMode="decimal"
                         min={0}
                         max={100}
                         step={0.1}
@@ -300,7 +325,7 @@ export default function SettingsPage() {
                         placeholder="e.g. 15.0"
                         value={discountPercent}
                         onChange={(e) => setDiscountPercent(e.target.value)}
-                        className="w-full text-sm font-mono font-black h-12"
+                        className="quantity-input w-full text-sm font-mono font-black h-12"
                       />
                     </div>
                     <Button
@@ -321,7 +346,7 @@ export default function SettingsPage() {
 
           {/* 2. DATABASE BACKUPS PANEL */}
           {activeTab === "backup" && (
-            <div className="space-y-8 max-w-2xl w-full">
+            <div id="settings-panel-backup" role="tabpanel" className="space-y-8 max-w-2xl w-full">
               <Card className="rounded-3xl border-slate-200 shadow-sm">
                 <CardHeader className="p-6 md:p-8 bg-slate-50/50 border-b border-slate-100">
                   <CardTitle className="text-lg font-heading font-black">System Database Blob Backups</CardTitle>
@@ -405,7 +430,7 @@ export default function SettingsPage() {
 
           {/* 3. USER MANAGEMENT PANEL */}
           {activeTab === "users" && (
-            <Card className="max-w-xl rounded-3xl border-slate-200 shadow-sm">
+            <Card id="settings-panel-users" role="tabpanel" className="max-w-xl rounded-3xl border-slate-200 shadow-sm">
               <CardHeader className="p-6 md:p-8 bg-slate-50/50 border-b border-slate-100">
                 <CardTitle className="text-lg font-heading font-black">Register User Accounts</CardTitle>
                 <CardDescription className="text-sm mt-1 text-slate-500">Configure secondary login access and passcode permissions:</CardDescription>
@@ -413,8 +438,9 @@ export default function SettingsPage() {
               <CardContent className="p-6 md:p-8">
                 <form onSubmit={handleCreateUser} className="space-y-5">
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Username Identifier</label>
+                    <label htmlFor="new-user-username" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Username Identifier</label>
                     <input
+                      id="new-user-username"
                       type="text"
                       required
                       placeholder="e.g. staff_member"
@@ -424,8 +450,9 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Passcode Password</label>
+                    <label htmlFor="new-user-passcode" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Passcode Password</label>
                     <input
+                      id="new-user-passcode"
                       type="password"
                       required
                       placeholder="Enter login passcode..."
@@ -435,8 +462,9 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">System Privilege Role</label>
+                    <label htmlFor="new-user-role" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">System Privilege Role</label>
                     <select
+                      id="new-user-role"
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value)}
                       className="w-full text-sm font-bold bg-white h-12 border-2 border-slate-200 rounded-xl"

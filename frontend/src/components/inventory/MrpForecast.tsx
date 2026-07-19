@@ -1,10 +1,18 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import {
+  DataTableScroll,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+} from "@/components/ui/DataTable";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, type DraftPurchaseOrderOut, type MrpProjectionOut, type SupplierOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { formatCurrency } from "@/lib/utils";
 
 interface MrpForecastProps {
   mrpProjections: MrpProjectionOut[];
@@ -60,57 +68,53 @@ export default function MrpForecast({ mrpProjections, suppliers, onRefresh: _onR
           <CardDescription>Forecasts stock exhaustion date based on actual kitchen usages</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <DataTableScroll label="Material depletion forecast" className="overflow-x-auto">
+            <table className="w-full min-w-[42rem] text-left border-collapse text-xs" aria-label="Material depletion forecast">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="px-6 py-3">Ingredient</th>
-                  <th className="px-6 py-3 text-right">Available Stock</th>
-                  <th className="px-6 py-3 text-right">Daily Burn</th>
-                  <th className="px-6 py-3 text-right">Days left</th>
-                  <th className="px-6 py-3">Risk Status</th>
-                </tr>
+                <TableHeaderRow>
+                  <TableHeaderCell>Ingredient</TableHeaderCell>
+                  <TableHeaderCell align="right">Available Stock</TableHeaderCell>
+                  <TableHeaderCell align="right">Daily Burn</TableHeaderCell>
+                  <TableHeaderCell align="right">Days left</TableHeaderCell>
+                  <TableHeaderCell>Risk Status</TableHeaderCell>
+                </TableHeaderRow>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {mrpProjections.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">
-                      No historical consumption logs found to forecast burn rate.
-                    </td>
-                  </tr>
+                  <TableEmptyState colSpan={5} title="No forecast data" description="Consumption history is needed before burn rates can be projected." />
                 ) : (
                   mrpProjections.map((p, idx) => {
-                    let badgeType: "success" | "warning" | "danger" = "success";
+                    let badgeStatus = "healthy";
                     let label = "Adequate";
                     
                     if (p.status === "danger") {
-                      badgeType = "danger";
+                      badgeStatus = "out of stock";
                       label = "Critical (<3d)";
                     } else if (p.status === "warning") {
-                      badgeType = "warning";
+                      badgeStatus = "low stock";
                       label = "Low (<14d)";
                     }
 
                     return (
-                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                      <TableRow key={`${p.ingredient_id}-${idx}`}>
                         <td className="px-6 py-3 font-extrabold text-slate-900">{p.ingredient_name}</td>
-                        <td className="px-6 py-3 text-right font-mono font-bold text-slate-800">{p.available_stock}{p.unit}</td>
-                        <td className="px-6 py-3 text-right font-mono text-slate-450">{p.daily_burn_rate}{p.unit}/day</td>
+                        <td className="px-6 py-3 text-right font-mono font-bold text-slate-800">{p.available_stock} {p.unit}</td>
+                        <td className="px-6 py-3 text-right font-mono text-slate-450">{p.daily_burn_rate} {p.unit}/day</td>
                         <td className={`px-6 py-3 text-right font-mono font-bold ${
                           p.status === "danger" ? "text-danger" : p.status === "warning" ? "text-warning" : "text-slate-750"
                         }`}>
                           {p.days_to_depletion === "Infinite" ? "Infinite" : `${p.days_to_depletion} days`}
                         </td>
                         <td className="px-6 py-3">
-                          <Badge variant={badgeType}>{label}</Badge>
+                          <StatusBadge status={badgeStatus} label={label} />
                         </td>
-                      </tr>
+                      </TableRow>
                     );
                   })
                 )}
               </tbody>
             </table>
-          </div>
+          </DataTableScroll>
         </CardContent>
       </Card>
 
@@ -123,8 +127,9 @@ export default function MrpForecast({ mrpProjections, suppliers, onRefresh: _onR
         <CardContent className="space-y-4">
           <form onSubmit={handleGeneratePo} className="space-y-4">
             <div>
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Supplier / Vendor</label>
+              <label htmlFor="mrp-supplier" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Supplier / Vendor</label>
               <select
+                id="mrp-supplier"
                 value={selectedSupplierId}
                 onChange={(e) => { setSelectedSupplierId(e.target.value); setDraftPo(null); }}
                 required
@@ -169,8 +174,8 @@ export default function MrpForecast({ mrpProjections, suppliers, onRefresh: _onR
                 <div className="space-y-1">
                   {draftPo.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center">
-                      <span>{item.ingredient_name} x {item.quantity}{item.unit}</span>
-                      <span className="font-bold">₱{item.subtotal}</span>
+                      <span>{item.ingredient_name} × {item.quantity} {item.unit}</span>
+                      <span className="font-bold">{formatCurrency(item.subtotal)}</span>
                     </div>
                   ))}
                 </div>
@@ -178,7 +183,7 @@ export default function MrpForecast({ mrpProjections, suppliers, onRefresh: _onR
 
               <div className="flex justify-between items-center text-[11px] font-black border-t border-slate-200 pt-2 text-slate-900">
                 <span>ESTIMATED COST:</span>
-                <span>₱{draftPo.grand_total}</span>
+                <span>{formatCurrency(draftPo.grand_total)}</span>
               </div>
             </div>
           )}

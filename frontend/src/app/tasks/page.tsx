@@ -1,8 +1,10 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useState } from "react";
 import { api, type CleaningTaskOut, type MaintenanceAssetOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/utils";
 import { 
   ClipboardCheck, 
   RefreshCw, 
@@ -10,12 +12,16 @@ import {
   Check, 
   Info,
   Edit3,
-  Loader2
+  Loader2,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Modal } from "@/components/ui/Modal";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Modal, ConfirmationModal } from "@/components/ui/Modal";
+
 
 export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<"cleaning" | "maintenance">("cleaning");
@@ -33,6 +39,23 @@ export default function TasksPage() {
   const [modalRemarks, setModalRemarks] = useState("");
   const [modalReplDate, setModalReplDate] = useState("");
   const [savingAssetDetails, setSavingAssetDetails] = useState(false);
+
+  // User permission/role
+  const [userRole, setUserRole] = useState<string>("staff");
+
+  // Create task states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newFrequency, setNewFrequency] = useState("Daily");
+  const [newArea, setNewArea] = useState("Production Area");
+  const [newStyleKind, setNewStyleKind] = useState("");
+  const [addingTask, setAddingTask] = useState(false);
+
+  // Delete task states
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
+  const [deletingType, setDeletingType] = useState<"cleaning" | "maintenance" | null>(null);
+
 
   useEffect(() => {
     if (editingAsset) {
@@ -83,8 +106,72 @@ export default function TasksPage() {
       } catch {
         fetchData(false);
       }
+      setUserRole(localStorage.getItem("hh_user_role") || "staff");
     }, 0);
   }, []);
+
+  const handleCreateTask = async () => {
+    if (activeTab === "cleaning") {
+      if (!newTaskName.trim()) return alert("Task name is required");
+      setAddingTask(true);
+      try {
+        const res = await api.createCleaningTask({
+          task_name: newTaskName,
+          frequency: newFrequency
+        });
+        setCleaningTasks(prev => [...prev, res]);
+        setIsAddModalOpen(false);
+        setNewTaskName("");
+      } catch (err: any) {
+        alert(`Error creating task: ${getErrorMessage(err)}`);
+      } finally {
+        setAddingTask(false);
+      }
+    } else {
+      if (!newTaskName.trim()) return alert("Item name is required");
+      setAddingTask(true);
+      try {
+        const res = await api.createMaintenanceAsset({
+          area: newArea,
+          item_name: newTaskName,
+          style_or_kind: newStyleKind || null
+        });
+        setMaintenanceAssets(prev => [...prev, res]);
+        setIsAddModalOpen(false);
+        setNewTaskName("");
+        setNewStyleKind("");
+      } catch (err: any) {
+        alert(`Error creating asset: ${getErrorMessage(err)}`);
+      } finally {
+        setAddingTask(false);
+      }
+    }
+  };
+
+  const handleDeleteTaskClick = (id: number, type: "cleaning" | "maintenance") => {
+    setDeletingTaskId(id);
+    setDeletingType(type);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deletingTaskId === null || !deletingType) return;
+    try {
+      if (deletingType === "cleaning") {
+        await api.deleteCleaningTask(deletingTaskId);
+        setCleaningTasks(prev => prev.filter(t => t.id !== deletingTaskId));
+      } else {
+        await api.deleteMaintenanceAsset(deletingTaskId);
+        setMaintenanceAssets(prev => prev.filter(a => a.id !== deletingTaskId));
+      }
+      setIsDeleteConfirmOpen(false);
+      setDeletingTaskId(null);
+      setDeletingType(null);
+    } catch (err: any) {
+      alert(`Error deleting task: ${getErrorMessage(err)}`);
+    }
+  };
+
 
   const handleCompleteCleaning = async (taskId: number) => {
     const today = new Date().toISOString().split('T')[0];
@@ -193,15 +280,29 @@ export default function TasksPage() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => fetchData(true)}
-          variant="outline"
-          size="lg"
-          className="w-full md:w-auto bg-white"
-          leftIcon={<RefreshCw size={16} />}
-        >
-          Refresh Logs
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          {userRole === "owner" && (
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto font-bold"
+              leftIcon={<Plus size={16} />}
+            >
+              Add {activeTab === "cleaning" ? "Task" : "Asset"}
+            </Button>
+          )}
+          <Button
+            onClick={() => fetchData(true)}
+            variant="outline"
+            size="lg"
+            className="w-full sm:w-auto bg-white"
+            leftIcon={<RefreshCw size={16} />}
+          >
+            Refresh Logs
+          </Button>
+        </div>
+
       </div>
 
       {/* Tabs Menu */}
@@ -209,6 +310,7 @@ export default function TasksPage() {
         <button
           onClick={() => setActiveTab("cleaning")}
           role="tab" aria-selected={activeTab === "cleaning"}
+          aria-controls="tasks-cleaning-panel"
           className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
             activeTab === "cleaning" 
               ? "bg-[#885625]/10 text-primary font-black animate-fade-in" 
@@ -220,6 +322,7 @@ export default function TasksPage() {
         <button
           onClick={() => setActiveTab("maintenance")}
           role="tab" aria-selected={activeTab === "maintenance"}
+          aria-controls="tasks-maintenance-panel"
           className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
             activeTab === "maintenance" 
               ? "bg-[#885625]/10 text-primary font-black animate-fade-in" 
@@ -244,7 +347,7 @@ export default function TasksPage() {
           const periodicTasks = cleaningTasks.filter(t => !t.frequency.toLowerCase().includes("daily"));
 
           return (
-            <div className="max-w-5xl mx-auto w-full space-y-6 2xl:space-y-8 animate-fade-in">
+            <div id="tasks-cleaning-panel" role="tabpanel" className="max-w-5xl mx-auto w-full space-y-6 2xl:space-y-8 animate-fade-in">
               {/* Premium Progress Bar card */}
               <Card className="rounded-3xl border-slate-200 shadow-xs bg-white p-5 sm:p-6 2xl:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 2xl:gap-6">
                 <div className="space-y-2 flex-1">
@@ -252,7 +355,14 @@ export default function TasksPage() {
                     <span className="text-xs text-primary font-black uppercase tracking-wider block">Today&apos;s Sanitation Score</span>
                     <span className="text-sm font-black text-slate-800">{completedCount} of {totalCount} Completed ({percentDone}%)</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200 shadow-inner mt-2">
+                  <div
+                    className="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden border border-slate-200 shadow-inner mt-2"
+                    role="progressbar"
+                    aria-label="Today's sanitation progress"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={percentDone}
+                  >
                     <div 
                       className="bg-primary h-full rounded-full transition-all duration-500 ease-out" 
                       style={{ width: `${percentDone}%` }}
@@ -291,7 +401,7 @@ export default function TasksPage() {
                       return (
                         <div 
                           key={task.id} 
-                          className={`p-4 2xl:p-5 border-2 rounded-2xl flex items-center justify-between hover:scale-[1.01] transition-transform duration-150 ${
+                          className={`p-4 2xl:p-5 border-2 rounded-2xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:scale-[1.01] transition-transform duration-150 ${
                             isDoneToday 
                               ? "bg-[#885625]/5 border-slate-200 text-slate-450" 
                               : "bg-white border-slate-150 hover:border-slate-350 text-slate-800 shadow-3xs"
@@ -299,6 +409,7 @@ export default function TasksPage() {
                         >
                           <div className="flex items-center gap-4 2xl:gap-5 min-w-0">
                             <button
+                              type="button"
                               onClick={() => {
                                 if (isUpdating) return;
                                 if (isDoneToday) {
@@ -308,6 +419,8 @@ export default function TasksPage() {
                                 }
                               }}
                               disabled={isUpdating}
+                              aria-label={isDoneToday ? `Mark ${task.task_name} as pending` : `Mark ${task.task_name} as completed`}
+                              aria-pressed={isDoneToday}
                               className={`w-11 h-11 rounded-xl border-3 flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                                 isDoneToday 
                                   ? "bg-primary border-primary text-white hover:bg-rose-600 hover:border-rose-600 shadow-sm" 
@@ -322,23 +435,37 @@ export default function TasksPage() {
                                 <Check size={20} className="stroke-[3] hover:text-primary" />
                               )}
                             </button>
-                            <div className="min-w-0">
-                              <span className={`text-base font-black block leading-snug truncate ${isDoneToday ? "line-through text-slate-400 font-medium" : "text-slate-850"}`}>
+                            <div className="min-w-0 flex-1">
+                              <span className={`block break-words text-base font-black leading-snug ${isDoneToday ? "line-through text-slate-400 font-medium" : "text-slate-850"}`}>
                                 {task.task_name}
                               </span>
                               <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mt-1">Daily Routine</span>
                             </div>
                           </div>
 
-                          <div className="text-right text-xs font-bold shrink-0 ml-4">
-                            {isDoneToday ? (
-                              <Badge variant="success" className="py-1 px-3 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">Completed</Badge>
-                            ) : task.last_done_date ? (
-                              <span className="text-slate-500 text-xs">Last done: <strong className="font-mono text-slate-800 font-bold">{task.last_done_date}</strong></span>
-                            ) : (
-                              <Badge variant="danger" className="py-1 px-3 rounded-lg text-xs font-bold">Pending</Badge>
+                          <div className="flex w-full items-center justify-end gap-3 shrink-0 sm:ml-4 sm:w-auto">
+                            <div className="text-right text-xs font-bold">
+                              {isDoneToday ? (
+                                <StatusBadge status="completed" label="Completed" className="py-1 px-3 rounded-lg text-xs font-bold" />
+                              ) : task.last_done_date ? (
+                                <span className="text-slate-500 text-xs">Last done: <strong className="font-mono text-slate-800 font-bold">{formatDate(task.last_done_date)}</strong></span>
+                              ) : (
+                                <StatusBadge status="pending" label="Pending" className="py-1 px-3 rounded-lg text-xs font-bold" />
+                              )}
+                            </div>
+                            {userRole === "owner" && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTaskClick(task.id, "cleaning")}
+                                aria-label={`Delete ${task.task_name}`}
+                                className="inline-flex h-10 w-10 items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                                title="Delete task"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             )}
                           </div>
+
                         </div>
                       );
                     })}
@@ -363,7 +490,7 @@ export default function TasksPage() {
                       return (
                         <div 
                           key={task.id} 
-                          className={`p-4 2xl:p-5 border-2 rounded-2xl flex items-center justify-between hover:scale-[1.01] transition-transform duration-150 ${
+                          className={`p-4 2xl:p-5 border-2 rounded-2xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:scale-[1.01] transition-transform duration-150 ${
                             isDoneToday 
                               ? "bg-[#885625]/5 border-slate-200 text-slate-450" 
                               : "bg-white border-slate-150 hover:border-slate-350 text-slate-800 shadow-3xs"
@@ -371,6 +498,7 @@ export default function TasksPage() {
                         >
                           <div className="flex items-center gap-4 2xl:gap-5 min-w-0">
                             <button
+                              type="button"
                               onClick={() => {
                                 if (isUpdating) return;
                                 if (isDoneToday) {
@@ -380,6 +508,8 @@ export default function TasksPage() {
                                 }
                               }}
                               disabled={isUpdating}
+                              aria-label={isDoneToday ? `Mark ${task.task_name} as pending` : `Mark ${task.task_name} as completed`}
+                              aria-pressed={isDoneToday}
                               className={`w-11 h-11 rounded-xl border-3 flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                                 isDoneToday 
                                   ? "bg-primary border-primary text-white hover:bg-rose-600 hover:border-rose-600 shadow-sm" 
@@ -394,23 +524,37 @@ export default function TasksPage() {
                                 <Check size={20} className="stroke-[3] hover:text-primary" />
                               )}
                             </button>
-                            <div className="min-w-0">
-                              <span className={`text-base font-black block leading-snug truncate ${isDoneToday ? "line-through text-slate-400 font-medium" : "text-slate-850"}`}>
+                            <div className="min-w-0 flex-1">
+                              <span className={`block break-words text-base font-black leading-snug ${isDoneToday ? "line-through text-slate-400 font-medium" : "text-slate-850"}`}>
                                 {task.task_name}
                               </span>
                               <span className="text-[10px] text-purple-600 font-black uppercase tracking-wider block mt-1">Cycle: {task.frequency}</span>
                             </div>
                           </div>
 
-                          <div className="text-right text-xs font-bold shrink-0 ml-4">
-                            {isDoneToday ? (
-                              <Badge variant="success" className="py-1 px-3 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">Completed</Badge>
-                            ) : task.last_done_date ? (
-                              <span className="text-slate-500 text-xs">Last done: <strong className="font-mono text-slate-800 font-bold">{task.last_done_date}</strong></span>
-                            ) : (
-                              <Badge variant="danger" className="py-1 px-3 rounded-lg text-xs font-bold">Pending</Badge>
+                          <div className="flex w-full items-center justify-end gap-3 shrink-0 sm:ml-4 sm:w-auto">
+                            <div className="text-right text-xs font-bold">
+                              {isDoneToday ? (
+                                <StatusBadge status="completed" label="Completed" className="py-1 px-3 rounded-lg text-xs font-bold" />
+                              ) : task.last_done_date ? (
+                                <span className="text-slate-500 text-xs">Last done: <strong className="font-mono text-slate-800 font-bold">{formatDate(task.last_done_date)}</strong></span>
+                              ) : (
+                                <StatusBadge status="pending" label="Pending" className="py-1 px-3 rounded-lg text-xs font-bold" />
+                              )}
+                            </div>
+                            {userRole === "owner" && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTaskClick(task.id, "cleaning")}
+                                aria-label={`Delete ${task.task_name}`}
+                                className="inline-flex h-10 w-10 items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                                title="Delete task"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             )}
                           </div>
+
                         </div>
                       );
                     })}
@@ -423,7 +567,7 @@ export default function TasksPage() {
 
         {/* 2. MAINTENANCE ASSETS TAB */}
         {activeTab === "maintenance" && (
-          <div className="space-y-6">
+          <div id="tasks-maintenance-panel" role="tabpanel" className="space-y-6">
             
             {/* Area filter toggles & Diagnostics guides */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-4 2xl:gap-6 justify-between">
@@ -431,8 +575,10 @@ export default function TasksPage() {
                 {["Production Area", "Kitchen", "CR"].map(area => (
                   <button
                     key={area}
+                    type="button"
                     onClick={() => setMaintArea(area)}
-                    className={`flex-1 text-center py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                    aria-pressed={maintArea === area}
+                    className={`min-h-11 flex-1 px-1 py-2.5 text-center text-xs leading-tight rounded-xl font-heading font-black uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                       maintArea === area 
                         ? "bg-white text-slate-850 shadow-3xs" 
                         : "text-slate-500 hover:text-slate-700"
@@ -520,27 +666,45 @@ export default function TasksPage() {
                               {asset.replacement_date && (
                                 <p className="text-slate-400 border-t border-slate-150 pt-2 mt-2 flex justify-between items-center">
                                   <span>Replacement Deadline:</span> 
-                                  <strong className="text-slate-800 font-mono text-sm">{asset.replacement_date}</strong>
+                                  <strong className="text-slate-800 font-mono text-sm">{formatDate(asset.replacement_date)}</strong>
                                 </p>
                               )}
                             </div>
                           )}
                         </div>
                         
-                        <button
-                          onClick={() => setEditingAsset(asset)}
-                          className="text-slate-455 hover:text-primary p-2 hover:bg-slate-100 rounded-xl transition-all cursor-pointer shrink-0 border border-slate-200 bg-white"
-                          title="Edit diagnostics remarks & replacement date"
-                        >
-                          <Edit3 size={14} />
-                        </button>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setEditingAsset(asset)}
+                            aria-label={`Edit diagnostics for ${asset.item_name}`}
+                            className="inline-flex h-10 w-10 items-center justify-center text-slate-455 hover:text-primary hover:bg-slate-100 rounded-xl transition-all cursor-pointer border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                            title="Edit diagnostics remarks & replacement date"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          {userRole === "owner" && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTaskClick(asset.id, "maintenance")}
+                              aria-label={`Delete ${asset.item_name}`}
+                              className="inline-flex h-10 w-10 items-center justify-center text-slate-455 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                              title="Delete asset"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+
                       </div>
 
                       {/* Status selectors (Big touch toggles mimicking physical switch pills) */}
                       <div className="pl-4 flex gap-2 bg-slate-100 p-1.5 border border-slate-200 rounded-2xl mt-1 shadow-inner select-none">
                         <button
+                          type="button"
                           onClick={() => handleUpdateStatus(asset, "OK")}
                           disabled={isSaving}
+                          aria-pressed={asset.condition === "OK"}
                           className={`flex-1 py-3.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                             asset.condition === "OK"
                               ? "bg-emerald-600 text-white shadow-3xs scale-[1.02] font-black"
@@ -550,8 +714,10 @@ export default function TasksPage() {
                           OK
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleUpdateStatus(asset, "Needs Repair")}
                           disabled={isSaving}
+                          aria-pressed={asset.condition === "Needs Repair"}
                           className={`flex-1 py-3.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                             asset.condition === "Needs Repair"
                               ? "bg-amber-600 text-white shadow-3xs scale-[1.02] font-black"
@@ -561,8 +727,10 @@ export default function TasksPage() {
                           Repair
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleUpdateStatus(asset, "Needs Replacement")}
                           disabled={isSaving}
+                          aria-pressed={asset.condition === "Needs Replacement"}
                           className={`flex-1 py-3.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
                             asset.condition === "Needs Replacement"
                               ? "bg-rose-600 text-white shadow-3xs scale-[1.02] font-black"
@@ -580,8 +748,7 @@ export default function TasksPage() {
           </div>
         )}
       </div>
-
-      {/* EDIT ASSET DETAILS MODAL */}
+       {/* EDIT ASSET DETAILS MODAL */}
       {editingAsset && (
         <Modal
           isOpen={!!editingAsset}
@@ -589,15 +756,16 @@ export default function TasksPage() {
           title="Equipment Diagnostics"
           size="sm"
         >
-          <div className="space-y-4 text-sm font-semibold text-slate-600">
+          <div className="space-y-4 text-sm font-semibold text-slate-605">
             <div>
               <span className="text-xs text-slate-400 font-bold uppercase block">Equipment Item</span>
               <strong className="font-heading font-black text-slate-850 text-base mt-0.5 block">{editingAsset.item_name}</strong>
             </div>
 
             <div>
-              <label className="text-xs text-slate-450 font-bold uppercase tracking-wider block mb-1.5">Remarks / Work Completed</label>
+              <label htmlFor="asset-diagnostics-remarks" className="text-xs text-slate-450 font-bold uppercase tracking-wider block mb-1.5">Remarks / Work Completed</label>
               <input
+                id="asset-diagnostics-remarks"
                 type="text"
                 placeholder="e.g. Tightened hinges, oiled tracks"
                 value={modalRemarks}
@@ -607,8 +775,9 @@ export default function TasksPage() {
             </div>
 
             <div>
-              <label className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Replacement Due Date</label>
+              <label htmlFor="asset-replacement-date" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Replacement Due Date</label>
               <input
+                id="asset-replacement-date"
                 type="date"
                 value={modalReplDate}
                 onChange={(e) => setModalReplDate(e.target.value)}
@@ -626,6 +795,115 @@ export default function TasksPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* ADD TASK / ASSET MODAL */}
+      {isAddModalOpen && (
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title={activeTab === "cleaning" ? "Add Cleaning Task" : "Add Maintenance Equipment Asset"}
+          size="sm"
+        >
+          <div className="space-y-4 text-sm font-semibold text-slate-650">
+            <div>
+              <label htmlFor="new-facility-task-name" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">
+                {activeTab === "cleaning" ? "Task Description / Name" : "Equipment Name"}
+              </label>
+              <input
+                id="new-facility-task-name"
+                type="text"
+                placeholder={activeTab === "cleaning" ? "e.g. Sanitize prep tables" : "e.g. Under-counter Freezer B"}
+                value={newTaskName}
+                onChange={(e) => setNewTaskName(e.target.value)}
+                className="w-full text-sm font-bold text-slate-800"
+              />
+            </div>
+
+            {activeTab === "cleaning" ? (
+              <div>
+                <label htmlFor="new-sanitation-frequency" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Sanitation Frequency</label>
+                <select
+                  id="new-sanitation-frequency"
+                  value={newFrequency}
+                  onChange={(e) => setNewFrequency(e.target.value)}
+                  className="w-full text-sm font-bold bg-white"
+                >
+                  <option value="Daily">Daily Routine</option>
+                  <option value="Weekly">Weekly Sanitation</option>
+                  <option value="Monthly">Monthly Inspection</option>
+                </select>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="new-maintenance-area" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Kitchen Area</label>
+                  <select
+                    id="new-maintenance-area"
+                    value={newArea}
+                    onChange={(e) => setNewArea(e.target.value)}
+                    className="w-full text-sm font-bold bg-white"
+                  >
+                    <option value="Production Area">Production Area</option>
+                    <option value="Kitchen">Kitchen Area</option>
+                    <option value="CR">CR / Sanitation Room</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="new-maintenance-style" className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Model / Style (Optional)</label>
+                  <input
+                    id="new-maintenance-style"
+                    type="text"
+                    placeholder="e.g. 300L Stainless / Standard"
+                    value={newStyleKind}
+                    onChange={(e) => setNewStyleKind(e.target.value)}
+                    className="w-full text-sm font-bold text-slate-800"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-6">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 text-sm"
+                onClick={() => setIsAddModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                className="h-12 text-sm font-bold"
+                onClick={handleCreateTask}
+                isLoading={addingTask}
+              >
+                Create {activeTab === "cleaning" ? "Task" : "Asset"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {isDeleteConfirmOpen && (
+        <ConfirmationModal
+          isOpen={isDeleteConfirmOpen}
+          onClose={() => {
+            setIsDeleteConfirmOpen(false);
+            setDeletingTaskId(null);
+            setDeletingType(null);
+          }}
+          onConfirm={handleDeleteConfirm}
+          title="Confirm Deletion"
+          confirmLabel="Delete Permanently"
+          cancelLabel="Cancel"
+          type="danger"
+          message={`Are you sure you want to permanently delete this ${
+            deletingType === "cleaning" ? "cleaning task" : "maintenance equipment asset"
+          }? This action is irreversible.`}
+        />
       )}
     </div>
   );

@@ -3,7 +3,20 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, type CostAnalysisOut } from "@/lib/api";
+import {
+  api,
+  type ConsignmentDeliveryOut,
+  type CostAnalysisOut,
+  type DashboardAnalyticsOut,
+  type DashboardCategoryAverageOut,
+  type DashboardCleaningSummaryOut,
+  type DashboardExpiringBatchOut,
+  type DashboardLowStockOut,
+  type DashboardMarginSummaryOut,
+  type DraftPurchaseOrderOut,
+  type ProductionPlanOut,
+} from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 import {
   Package, AlertTriangle, RefreshCw, Coins,
   ClipboardCheck, Download, TrendingDown,
@@ -47,17 +60,17 @@ export default function Dashboard() {
   const router = useRouter();
   
   // States
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [ingredients, setIngredients] = useState<any[]>([]);
-  const [unpaidDeliveries, setUnpaidDeliveries] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<DashboardAnalyticsOut | null>(null);
+  const [ingredients, setIngredients] = useState<DashboardLowStockOut[]>([]);
+  const [unpaidDeliveries, setUnpaidDeliveries] = useState<ConsignmentDeliveryOut[]>([]);
   const [costAnalysis, setCostAnalysis] = useState<CostAnalysisOut[]>([]);
-  const [todayPlan, setTodayPlan] = useState<any>(null);
-  const [cleaningSummary, setCleaningSummary] = useState<any>({ total_tasks: 0, completed_tasks: 0 });
-  const [batches, setBatches] = useState<any[]>([]);
+  const [todayPlan, setTodayPlan] = useState<ProductionPlanOut | null>(null);
+  const [cleaningSummary, setCleaningSummary] = useState<DashboardCleaningSummaryOut>({ total_tasks: 0, completed_tasks: 0 });
+  const [batches, setBatches] = useState<DashboardExpiringBatchOut[]>([]);
   const [totalUnpaidAR, setTotalUnpaidAR] = useState(0);
-  const [topMargins, setTopMargins] = useState<any[]>([]);
-  const [lowMargins, setLowMargins] = useState<any[]>([]);
-  const [categoryAverages, setCategoryAverages] = useState<any[]>([]);
+  const [topMargins, setTopMargins] = useState<DashboardMarginSummaryOut[]>([]);
+  const [lowMargins, setLowMargins] = useState<DashboardMarginSummaryOut[]>([]);
+  const [categoryAverages, setCategoryAverages] = useState<DashboardCategoryAverageOut[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +80,8 @@ export default function Dashboard() {
   const [isSettleOpen, setIsSettleOpen] = useState(false);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | null>(null);
   const [isPOOpen, setIsPOOpen] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<any>(null);
-  const [draftPo, setDraftPo] = useState<any>(null);
+  const [selectedIngredient, setSelectedIngredient] = useState<DashboardLowStockOut | null>(null);
+  const [draftPo, setDraftPo] = useState<DraftPurchaseOrderOut | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchData = async (isBackground = false) => {
@@ -78,7 +91,7 @@ export default function Dashboard() {
       const summary = await api.getDashboardSummary();
       const isOwnerUser = summary.viewer_role === "owner";
       
-      let allCostAnalysis: any[] = [];
+      let allCostAnalysis: CostAnalysisOut[] = [];
       if (isOwnerUser) {
         try {
           allCostAnalysis = await api.getCostAnalysis();
@@ -88,7 +101,7 @@ export default function Dashboard() {
       }
       
       setUserRole(isOwnerUser ? "owner" : "staff");
-      setAnalytics(summary.analytics || {});
+      setAnalytics(summary.analytics);
       setIngredients(summary.low_stock || []);
       setCleaningSummary(summary.cleaning_summary || { total_tasks: 0, completed_tasks: 0 });
       setUnpaidDeliveries(summary.unpaid_deliveries || []);
@@ -99,7 +112,7 @@ export default function Dashboard() {
       setTopMargins(summary.top_margins || []);
       setLowMargins(summary.low_margins || []);
       setCategoryAverages(summary.category_averages || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       if (!isBackground) setError("Unable to connect to servers. Please retry.");
     } finally {
@@ -123,16 +136,16 @@ export default function Dashboard() {
       setIsSettleOpen(false);
       setSelectedDeliveryId(null);
       await fetchData(true);
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Error: ${getErrorMessage(err)}`);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleTriggerDraftPO = async (ing: any) => {
+  const handleTriggerDraftPO = async (ing: DashboardLowStockOut) => {
     setSelectedIngredient(ing);
-    if (!ing.supplier_id) {
+    if (ing.item_type !== "raw_ingredient" || !ing.supplier_id) {
       alert(`No supplier assigned to ${ing.name}.`);
       return;
     }
@@ -145,8 +158,8 @@ export default function Dashboard() {
       });
       setDraftPo(po);
       setIsPOOpen(true);
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Error: ${getErrorMessage(err)}`);
     } finally {
       setActionLoading(false);
     }
@@ -161,8 +174,8 @@ export default function Dashboard() {
       link.href = url;
       link.download = `hh-backup-${new Date().toISOString().split("T")[0]}.json`;
       link.click();
-    } catch (e: any) {
-      alert(`Backup failed: ${e.message}`);
+    } catch (err: unknown) {
+      alert(`Backup failed: ${getErrorMessage(err)}`);
     } finally {
       setActionLoading(false);
     }
@@ -191,8 +204,10 @@ export default function Dashboard() {
   const todayDateStr = new Date().toLocaleDateString("en-PH", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
   const { total_tasks: totalTasks = 0, completed_tasks: completedTasks = 0 } = cleaningSummary;
   const sanitationPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const overallNetMargin = analytics?.combined_sales > 0
-    ? ((analytics.combined_net_profit / analytics.combined_sales) * 100).toFixed(1)
+  const combinedSales = analytics?.combined_sales ?? 0;
+  const combinedNetProfit = analytics?.combined_net_profit ?? 0;
+  const overallNetMargin = combinedSales > 0
+    ? ((combinedNetProfit / combinedSales) * 100).toFixed(1)
     : "0.0";
 
   // Recharts structured datasets
@@ -209,10 +224,10 @@ export default function Dashboard() {
 
   const categoryCostData = categoryAverages.map(cat => ({
     category: cat.category,
-    "Food Cost": parseFloat(cat.avg_food_cost) || 0,
-    "Labor": parseFloat(cat.avg_labor_cost) || 0,
-    "Utility": parseFloat(cat.avg_utility_cost) || 0,
-    "Net Profit": parseFloat(cat.avg_net_profit) || 0,
+    "Food Cost": Number.parseFloat(String(cat.avg_food_cost)) || 0,
+    "Labor": Number.parseFloat(String(cat.avg_labor_cost)) || 0,
+    "Utility": Number.parseFloat(String(cat.avg_utility_cost)) || 0,
+    "Net Profit": Number.parseFloat(String(cat.avg_net_profit)) || 0,
   }));
 
   // Margin Guard list
@@ -253,8 +268,8 @@ export default function Dashboard() {
                   try {
                     await api.recalculateAllCosts();
                     await fetchData(true);
-                  } catch (e: any) {
-                    alert(e.message);
+                  } catch (err: unknown) {
+                    alert(getErrorMessage(err));
                   } finally {
                     setActionLoading(false);
                   }
@@ -635,7 +650,7 @@ export default function Dashboard() {
                     <div className="text-center text-xs text-slate-455 font-bold italic py-4">All consignment deliveries have been settled. ✓</div>
                   ) : (
                     unpaidDeliveries.slice(0, 3).map((del) => {
-                      const totalVal = del.items.reduce((sum: number, item: any) => sum + (item.units_sold * item.reseller_price_snapshot), 0);
+                      const totalVal = del.items.reduce((sum, item) => sum + (item.units_sold * item.reseller_price_snapshot), 0);
                       return (
                         <div key={del.id} className="p-3.5 rounded-2xl bg-white border border-slate-200 flex justify-between items-center gap-4 hover:border-slate-350 transition-all">
                           <div>
@@ -724,7 +739,7 @@ export default function Dashboard() {
             <div className="lg:col-span-4 bg-white border-2 border-[#dfd5c6] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
               <span className="text-xs font-black uppercase text-slate-400 block tracking-wider">Sales Channel Revenue Share</span>
               <div className="h-44 w-full relative flex items-center justify-center mt-3">
-                {analytics?.combined_sales > 0 ? (
+                {combinedSales > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={channelShareData} cx="50%" cy="50%" innerRadius={50} outerRadius={68} paddingAngle={4} dataKey="value">
@@ -735,7 +750,7 @@ export default function Dashboard() {
                 ) : (
                   <CircleDot size={28} className="text-slate-200" />
                 )}
-                {analytics?.combined_sales > 0 && (
+                {combinedSales > 0 && (
                   <div className="absolute text-center pointer-events-none">
                     <span className="text-[9px] text-slate-400 uppercase font-bold block">Total Sales</span>
                     <span className="text-xs font-black text-slate-800 font-mono">₱{analytics?.combined_sales?.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
@@ -791,7 +806,7 @@ export default function Dashboard() {
                 <span className="text-xs text-slate-400 font-semibold mt-0.5 block">Ratio of total profit vs raw material and portion packaging expenses</span>
               </div>
               <div className="h-40 w-full relative flex items-center justify-center mt-3">
-                {analytics?.combined_sales > 0 ? (
+                {combinedSales > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={cogsProfitShareData} cx="50%" cy="50%" innerRadius={48} outerRadius={64} paddingAngle={4} dataKey="value">
@@ -802,7 +817,7 @@ export default function Dashboard() {
                 ) : (
                   <CircleDot size={28} className="text-slate-200" />
                 )}
-                {analytics?.combined_sales > 0 && (
+                {combinedSales > 0 && (
                   <div className="absolute text-center pointer-events-none">
                     <span className="text-[9px] text-slate-400 uppercase font-bold block">Margin</span>
                     <span className="text-xs font-black text-slate-800 font-mono">{overallNetMargin}%</span>
@@ -911,7 +926,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                    {todayPlan.targets?.slice(0, 3).map((t: any) => (
+                    {todayPlan.targets?.slice(0, 3).map((t) => (
                       <div key={t.id} className="flex justify-between text-xs font-bold text-slate-600 py-1.5 border-b border-slate-100">
                         <span>{t.product_name} <span className="font-mono text-[9px] text-slate-400 font-semibold">({t.size})</span></span>
                         <span className="font-mono font-black">{t.target_qty} jars</span>
@@ -987,7 +1002,7 @@ export default function Dashboard() {
               </div>
               <div className="border-y border-slate-150 py-3 space-y-2">
                 <span className="font-bold text-xs uppercase text-slate-400 block">Items:</span>
-                {draftPo.items.map((it: any, i: number) => (
+                {draftPo.items.map((it, i) => (
                   <p key={i} className="font-mono font-semibold text-slate-800">
                     {it.ingredient_name} × {it.quantity} {it.unit} — ₱{it.subtotal.toLocaleString()}
                   </p>

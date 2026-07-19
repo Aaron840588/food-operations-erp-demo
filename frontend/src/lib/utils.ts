@@ -3,13 +3,21 @@
  */
 const CURRENT_LINEUP_SOURCE_CATEGORIES = new Set(["sweet", "savory", "sandwich"]);
 
+export type ProductIdentity = {
+  sku?: string;
+  product_name?: string;
+  name?: string;
+  category?: string;
+  size?: string | null;
+};
+
 export function isCurrentLineupProduct(p: { category?: string }): boolean {
   return CURRENT_LINEUP_SOURCE_CATEGORIES.has((p.category || "").trim().toLowerCase());
 }
 
-export function getProductBusinessCategory(p: { sku?: string; product_name?: string; category?: string }): string {
+export function getProductBusinessCategory(p: ProductIdentity): string {
   const sku = (p.sku || "").toUpperCase();
-  const name = (p.product_name || "").toLowerCase();
+  const name = (p.product_name || p.name || "").toLowerCase();
   const cat = (p.category || "").toLowerCase();
 
   // Spreads & Sauces
@@ -30,8 +38,18 @@ export function getProductBusinessCategory(p: { sku?: string; product_name?: str
     return "Spreads & Sauces";
   }
   
-  // Sandwiches & Salads (default)
-  return "Sandwiches & Salads";
+  if (
+    sku.includes("-SW-") ||
+    sku.includes("-SL-") ||
+    name.includes("sandwich") ||
+    name.includes("salad") ||
+    cat.includes("sandwich") ||
+    cat.includes("salad")
+  ) {
+    return "Sandwiches & Salads";
+  }
+
+  return UNCATEGORIZED_BUSINESS_CATEGORY;
 }
 
 /**
@@ -40,7 +58,88 @@ export function getProductBusinessCategory(p: { sku?: string; product_name?: str
 export const BUSINESS_CATEGORIES = [
   "Spreads & Sauces",
   "Sandwiches & Salads"
-];
+] as const;
+
+export const UNCATEGORIZED_BUSINESS_CATEGORY = "Uncategorized";
+
+export type ProductSizeGroup = {
+  key: string;
+  label: string;
+  order: number;
+};
+
+const OTHER_SIZE_GROUP: ProductSizeGroup = {
+  key: "other-sizes",
+  label: "Other Sizes",
+  order: 99,
+};
+
+/**
+ * Returns the shared subgroup used by hierarchical product tables.
+ * The commercial jar format remains useful in group headings, while the
+ * canonical badge itself shows physical weight (for example Indulge / 240g).
+ */
+export function getProductSizeGroup(product: ProductIdentity): ProductSizeGroup {
+  const businessCategory = getProductBusinessCategory(product);
+  const sku = (product.sku || "").toUpperCase();
+  const name = (product.product_name || product.name || "").toLowerCase();
+  const sourceCategory = (product.category || "").toLowerCase();
+  const size = (product.size || "").toLowerCase().trim();
+
+  if (businessCategory === "Spreads & Sauces") {
+    const isSweet = sourceCategory.includes("sweet") || sku.includes("SWT");
+    const flavorLabel = isSweet ? "Sweet Spreads" : "Savory Spreads";
+    const flavorOrder = isSweet ? 0 : 10;
+    const isIndulge =
+      size === "indulge" ||
+      size === "ind" ||
+      ["200g", "220g", "240g", "250g", "200", "220", "240", "250"].includes(size) ||
+      sku.includes("-IND-");
+    const isSampler =
+      size === "sampler" ||
+      size === "sam" ||
+      ["100g", "110g", "100", "110"].includes(size) ||
+      sku.includes("-SAM-");
+
+    if (isIndulge) {
+      return {
+        key: `${isSweet ? "sweet" : "savory"}-indulge`,
+        label: `${flavorLabel} (Indulge / ${getSizeLabel("Indulge", sku)})`,
+        order: flavorOrder,
+      };
+    }
+
+    if (isSampler) {
+      return {
+        key: `${isSweet ? "sweet" : "savory"}-sampler`,
+        label: `${flavorLabel} (Sampler / ${getSizeLabel("Sampler", sku)})`,
+        order: flavorOrder + 1,
+      };
+    }
+
+    return {
+      key: `${isSweet ? "sweet" : "savory"}-other`,
+      label: `${flavorLabel} (Other Sizes)`,
+      order: flavorOrder + 2,
+    };
+  }
+
+  if (businessCategory === "Sandwiches & Salads") {
+    const candidates = `${size} ${sku} ${name}`;
+    if (/\b(full|whole|fl)\b|\-FL\-/.test(candidates)) {
+      return { key: "full", label: "Full", order: 20 };
+    }
+    if (/\b(solo|sl)\b|\-SL\-/.test(candidates)) {
+      return { key: "solo", label: "Solo", order: 21 };
+    }
+    if (/\b(half|hf)\b|\-HF\-/.test(candidates)) {
+      return { key: "half", label: "Half", order: 22 };
+    }
+    return { key: "standard", label: "Standard", order: 23 };
+  }
+
+  return OTHER_SIZE_GROUP;
+}
 
 /**
  * Returns Tailwind CSS class strings for a colored size badge.
@@ -113,4 +212,87 @@ export function getSizeLabel(size: string, sku?: string): string {
     return "Full";
   }
   return (size || "").toUpperCase();
+}
+
+export function formatJars(count: number | string): string {
+  const c = Number(count);
+  return `${c} ${c === 1 ? "jar" : "jars"}`;
+}
+
+export function formatUnits(count: number | string): string {
+  const c = Number(count);
+  return `${c} ${c === 1 ? "unit" : "units"}`;
+}
+
+export function formatProductQuantity(product: ProductIdentity, count: number | string): string {
+  return getProductBusinessCategory(product) === "Spreads & Sauces"
+    ? formatJars(count)
+    : formatUnits(count);
+}
+
+export function formatCurrency(value: number | string | null | undefined): string {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "—";
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function toValidDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDate(value: string | Date | null | undefined): string {
+  const date = toValidDate(value);
+  if (!date) return "—";
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+export function formatDateTime(value: string | Date | null | undefined): string {
+  const date = toValidDate(value);
+  if (!date) return "—";
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+export function toProductTitleCase(name: string): string {
+  if (!name) return "";
+  
+  const lowercaseWords = ["and", "with", "or", "but", "in", "on", "for", "the", "a", "an", "at", "to", "by", "of", "from"];
+  const uppercaseWords = ["SKU", "BOM", "DR", "GCash", "Maya", "PWA", "POS", "VAT", "COGS", "AR", "BLT", "PCLB", "PCS", "CMS", "WM", "YP", "CGO", "PP", "ST", "CLS", "WMS", "WMS-HF-SW-SWT", "PCS-HF-SW-SVR", "PCLB-HF-SW-SVR"];
+
+  return name
+    .split(/\s+/)
+    .map((word, index, arr) => {
+      const cleanWord = word.replace(/[^a-zA-Z0-9']/g, "");
+      const upperWord = cleanWord.toUpperCase();
+      
+      if (uppercaseWords.includes(upperWord)) {
+        return word.toUpperCase();
+      }
+      
+      if (lowercaseWords.includes(cleanWord.toLowerCase()) && index > 0 && index < arr.length - 1) {
+        return word.toLowerCase();
+      }
+      
+      if (word.length > 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+      return word;
+    })
+    .join(" ");
 }

@@ -1,10 +1,19 @@
 import React, { useState } from "react";
-import { Search, Plus, Minus, Edit3, Save, AlertCircle, ChevronDown, ChevronRight, Package } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { Search, Edit3, Save, AlertCircle, ChevronDown, ChevronRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { getProductBusinessCategory, BUSINESS_CATEGORIES, getSizeBadgeStyle } from "@/lib/utils";
+import {
+  BUSINESS_CATEGORIES,
+  formatCurrency,
+  formatProductQuantity,
+  getProductBusinessCategory,
+  getProductSizeGroup,
+  isCurrentLineupProduct,
+} from "@/lib/utils";
+import { DataTableScroll } from "@/components/ui/DataTable";
+import { NumericQuantityInput } from "@/components/ui/NumericQuantityInput";
 import { ProductDisplay } from "@/components/ui/ProductDisplay";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, type ProductSKUOut, type RawIngredientOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -76,13 +85,6 @@ export default function StockList({
   const isGroupExpanded = (groupName: string) =>
     expandedGroups[groupName] !== false; // default open
 
-  const handleStepQty = (id: string | number, delta: number, currentVal: number) => {
-    setAdjustQty((prev) => {
-      const base = prev[id] !== undefined ? prev[id] : currentVal;
-      return { ...prev, [id]: Math.max(0, base + delta) };
-    });
-  };
-
   const handleApplyAdjustment = async (id: string | number, currentStock: number, isProduct: boolean) => {
     const qtyInput = adjustQty[id] !== undefined ? adjustQty[id] : currentStock;
     setActionLoading(id);
@@ -127,6 +129,7 @@ export default function StockList({
   };
 
   const filteredProducts = products
+    .filter(isCurrentLineupProduct)
     .filter((p) => p.sku !== "SKU")
     .filter((p) => {
       const matchSearch =
@@ -145,66 +148,22 @@ export default function StockList({
   });
 
   const groupProductsByCategoryAndSize = (productsList: ProductSKUOut[]) => {
-    const groups: Record<string, Record<string, ProductSKUOut[]>> = {
-      "Spreads & Sauces": {
-        "Sweet Spreads (Indulge / 240g)": [],
-        "Sweet Spreads (Sampler / 100g)": [],
-        "Savory Spreads (Indulge / 200g)": [],
-        "Savory Spreads (Sampler / 100g)": [],
-        "Other Sizes": [],
-      },
-      "Sandwiches & Salads": {
-        "Full Size (Double Portion)": [],
-        "Solo Size (Single Portion)": [],
-        "Half Size (Snack Portion)": [],
-        "Other Sizes": [],
-      },
-    };
+    const groups: Record<string, Array<{ key: string; label: string; order: number; items: ProductSKUOut[] }>> =
+      Object.fromEntries(BUSINESS_CATEGORIES.map((category) => [category, []]));
 
     productsList.forEach((item) => {
       const bizCat = getProductBusinessCategory(item);
-      const targetCat = bizCat === "Spreads & Sauces" ? "Spreads & Sauces" : "Sandwiches & Salads";
-      const sizeLower = (item.size || "").toLowerCase().trim();
-      let sizeGroup = "Other Sizes";
-      if (targetCat === "Spreads & Sauces") {
-        const isSavory = item.sku.includes("SVR") || item.sku.startsWith("PP") || item.sku.startsWith("CGO") || item.sku.startsWith("CLS");
-        if (sizeLower.includes("sampler") || sizeLower.includes("sam") || sizeLower.includes("110")) {
-          sizeGroup = isSavory ? "Savory Spreads (Sampler / 100g)" : "Sweet Spreads (Sampler / 100g)";
-        } else if (
-          sizeLower.includes("indulge") ||
-          sizeLower.includes("ind") ||
-          sizeLower.includes("240") ||
-          sizeLower.includes("220") ||
-          sizeLower.includes("250")
-        ) {
-          sizeGroup = isSavory ? "Savory Spreads (Indulge / 200g)" : "Sweet Spreads (Indulge / 240g)";
-        }
-      } else {
-        if (sizeLower.includes("half") || sizeLower.includes("hf")) {
-          sizeGroup = "Half Size (Snack Portion)";
-        } else if (sizeLower.includes("full") || sizeLower.includes("fl")) {
-          sizeGroup = "Full Size (Double Portion)";
-        } else if (sizeLower.includes("solo") || sizeLower.includes("sl")) {
-          sizeGroup = "Solo Size (Single Portion)";
-        }
+      if (!groups[bizCat]) return;
+      const sizeGroup = getProductSizeGroup(item);
+      let bucket = groups[bizCat].find((candidate) => candidate.key === sizeGroup.key);
+      if (!bucket) {
+        bucket = { ...sizeGroup, items: [] };
+        groups[bizCat].push(bucket);
       }
-
-      if (!groups[targetCat]) {
-        groups[targetCat] = {
-          "Sweet Spreads (Indulge / 240g)": [],
-          "Sweet Spreads (Sampler / 100g)": [],
-          "Savory Spreads (Indulge / 200g)": [],
-          "Savory Spreads (Sampler / 100g)": [],
-          "Full Size (Double Portion)": [],
-          "Solo Size (Single Portion)": [],
-          "Half Size (Snack Portion)": [],
-          "Other Sizes": [],
-        };
-      }
-      if (!groups[targetCat][sizeGroup]) groups[targetCat][sizeGroup] = [];
-      groups[targetCat][sizeGroup].push(item);
+      bucket.items.push(item);
     });
 
+    Object.values(groups).forEach((buckets) => buckets.sort((a, b) => a.order - b.order));
     return groups;
   };
 
@@ -215,7 +174,7 @@ export default function StockList({
   // -- Ingredient row renderer (shared between grouped & flat view) --
 
   const renderIngredientRow = (ing: RawIngredientOut) => {
-    const isLow = (ing.available_stock || 0) <= (ing.reorder_level || 100);
+    const isLow = (ing.available_stock ?? 0) <= (ing.reorder_level ?? 100);
     const currentVal = adjustQty[ing.id] !== undefined ? adjustQty[ing.id] : ing.available_stock;
 
     return (
@@ -240,34 +199,23 @@ export default function StockList({
         {/* Stepper */}
         <td className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-3.5">
           <div className="flex justify-center items-center gap-2">
-            <button
-              onClick={() => handleStepQty(ing.id, -100, ing.available_stock)}
-              className="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-            >
-              <Minus size={13} className="stroke-[3]" />
-            </button>
-            <input
-              type="number"
+            <NumericQuantityInput
               value={currentVal}
-              onChange={(e) =>
-                setAdjustQty({ ...adjustQty, [ing.id]: Math.max(0, parseFloat(e.target.value) || 0) })
-              }
-              className="w-16 h-9 text-center font-mono font-black text-sm border-2 border-slate-200 rounded-xl text-slate-800 focus:border-primary focus:ring-0 2xl:w-20"
+              onChange={(quantity) => setAdjustQty({ ...adjustQty, [ing.id]: quantity })}
+              label={`Stock level for ${ing.name}`}
+              min={0}
+              step={100}
             />
             <button
-              onClick={() => handleStepQty(ing.id, 100, ing.available_stock)}
-              className="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-            >
-              <Plus size={13} className="stroke-[3]" />
-            </button>
-            <button
+              type="button"
               onClick={() => handleApplyAdjustment(ing.id, ing.available_stock, false)}
               disabled={
                 actionLoading === ing.id ||
                 adjustQty[ing.id] === undefined ||
                 adjustQty[ing.id] === ing.available_stock
               }
-              className={`p-2 rounded-xl transition-all duration-150 cursor-pointer ${
+              aria-label={`Save stock level for ${ing.name}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-150 cursor-pointer ${
                 adjustQty[ing.id] !== undefined && adjustQty[ing.id] !== ing.available_stock
                   ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100 shadow-3xs"
                   : "bg-slate-100 text-slate-300 opacity-0 scale-95 pointer-events-none"
@@ -281,18 +229,14 @@ export default function StockList({
 
         {isOwner && (
           <td className="px-4 py-3 border-r border-slate-200 text-right text-slate-500 font-mono font-bold text-xs 2xl:px-6 2xl:py-3.5">
-            ₱{((ing.price ?? 0) / (ing.net_weight || 1)).toFixed(4)} / {ing.unit}
+            {formatCurrency((ing.price ?? 0) / (ing.net_weight || 1))} / {ing.unit}
           </td>
         )}
         <td className={`px-4 py-3 text-center 2xl:px-6 2xl:py-3.5 ${isOwner ? "border-r border-slate-200" : ""}`}>
           {isLow ? (
-            <Badge variant="danger" className="py-1 px-2.5 text-xs rounded-lg font-bold">
-              Low Stock
-            </Badge>
+            <StatusBadge status="low stock" label="Low Stock" />
           ) : (
-            <Badge variant="success" className="py-1 px-2.5 text-xs rounded-lg font-bold">
-              Healthy
-            </Badge>
+            <StatusBadge status="healthy" />
           )}
         </td>
         {isOwner && (
@@ -325,6 +269,7 @@ export default function StockList({
               setStockType("finished");
               setSelectedCategory("All");
             }}
+            aria-pressed={stockType === "finished"}
           >
             Finished SKUs
           </Button>
@@ -336,6 +281,7 @@ export default function StockList({
               setStockType("raw");
               setSelectedCategory("All");
             }}
+            aria-pressed={stockType === "raw"}
           >
             Raw Materials
           </Button>
@@ -353,6 +299,7 @@ export default function StockList({
               }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label={stockType === "finished" ? "Search finished products" : "Search raw materials"}
               style={{ paddingLeft: "3rem" }}
               className="w-full pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-primary/20 bg-slate-50 font-semibold h-11 2xl:h-12"
             />
@@ -363,6 +310,8 @@ export default function StockList({
             <div className="flex bg-slate-100 rounded-xl p-1 gap-1 shrink-0">
               <button
                 onClick={() => setRawViewMode("grouped")}
+                type="button"
+                aria-pressed={rawViewMode === "grouped"}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                   rawViewMode === "grouped"
                     ? "bg-white text-slate-900 shadow-sm"
@@ -373,6 +322,8 @@ export default function StockList({
               </button>
               <button
                 onClick={() => setRawViewMode("flat")}
+                type="button"
+                aria-pressed={rawViewMode === "flat"}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                   rawViewMode === "flat"
                     ? "bg-white text-slate-900 shadow-sm"
@@ -424,6 +375,8 @@ export default function StockList({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
+              type="button"
+              aria-pressed={selectedCategory === cat}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
                 selectedCategory === cat
                   ? "bg-slate-900 text-white border-slate-900 shadow-sm"
@@ -450,44 +403,43 @@ export default function StockList({
             ) : (
               <>
                 {/* Desktop */}
-                <div className="hidden xl:block overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-slate-200 text-sm text-slate-700">
+                <DataTableScroll label="Finished product stock levels" className="hidden overflow-x-auto xl:block">
+                  <table className="w-full min-w-[64rem] text-left border-collapse border border-slate-200 text-sm text-slate-700" aria-label="Finished product stock levels">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                        <th className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Product SKU</th>
-                        <th className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Category</th>
-                        <th className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Size</th>
-                        <th className="px-4 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">In Warehouse</th>
-                        <th className="px-4 py-3 border-r border-slate-200 text-center 2xl:px-6 2xl:py-4.5">Set Stock Level</th>
+                        <th scope="col" className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Product SKU</th>
+                        <th scope="col" className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Category</th>
+                        <th scope="col" className="px-4 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">In Warehouse</th>
+                        <th scope="col" className="px-4 py-3 border-r border-slate-200 text-center 2xl:px-6 2xl:py-4.5">Set Stock Level</th>
                         {isOwner && (
                           <>
-                            <th className="px-4 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Retail SRP</th>
-                            <th className="px-4 py-3 text-right 2xl:px-6 2xl:py-4.5">Edit</th>
+                            <th scope="col" className="px-4 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Retail SRP</th>
+                            <th scope="col" className="px-4 py-3 text-right 2xl:px-6 2xl:py-4.5">Edit</th>
                           </>
                         )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-155 font-semibold text-slate-700">
                       {Object.entries(groupedProducts).map(([categoryName, sizeGroups]) => {
-                        const hasItems = Object.values(sizeGroups).some((list) => list.length > 0);
+                        const hasItems = sizeGroups.some((group) => group.items.length > 0);
                         if (!hasItems) return null;
 
                         return (
                           <React.Fragment key={categoryName}>
                             <tr className="bg-[#885625]/5 select-none border-t-2 border-slate-200">
-                              <td colSpan={isOwner ? 7 : 5} className="px-4 py-3 2xl:px-6 2xl:py-4">
+                              <td colSpan={isOwner ? 6 : 4} className="px-4 py-3 2xl:px-6 2xl:py-4">
                                 <span className="text-sm font-heading font-black text-[#885625] uppercase tracking-wider flex items-center gap-1.5">
                                   🚀 {categoryName}
                                 </span>
                               </td>
                             </tr>
 
-                            {Object.entries(sizeGroups).map(([sizeGroupName, items]) => {
+                            {sizeGroups.map(({ key, label: sizeGroupName, items }) => {
                               if (items.length === 0) return null;
                               return (
-                                <React.Fragment key={sizeGroupName}>
+                                <React.Fragment key={key}>
                                   <tr className="bg-slate-50/50 select-none border-t border-b border-slate-100">
-                                    <td colSpan={isOwner ? 7 : 5} className="px-4 py-2.5 2xl:px-8 2xl:py-3">
+                                    <td colSpan={isOwner ? 6 : 4} className="px-4 py-2.5 2xl:px-8 2xl:py-3">
                                       <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
                                         📦 {sizeGroupName}
                                       </span>
@@ -516,45 +468,19 @@ export default function StockList({
                                         <td className="px-4 py-3 border-r border-slate-200 text-slate-505 capitalize 2xl:px-6 2xl:py-4">
                                           {p.category}
                                         </td>
-                                        <td className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4">
-                                          <span className={`text-xs font-black font-mono px-2 py-1 rounded ${getSizeBadgeStyle(p.size)}`}>{p.size || "-"}</span>
-                                        </td>
                                         <td className="px-4 py-3 border-r border-slate-200 text-right font-black text-slate-900 text-sm 2xl:px-6 2xl:py-4 2xl:text-base">
-                                          {p.warehouse_stock} units
+                                          {formatProductQuantity(p, p.warehouse_stock)}
                                         </td>
                                         <td className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4">
                                           <div className="flex justify-center items-center gap-2 2xl:gap-3">
-                                            <button
-                                              onClick={() =>
-                                                handleStepQty(p.sku, -1, p.warehouse_stock)
-                                              }
-                                              className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                            >
-                                              <Minus size={14} className="stroke-[3]" />
-                                            </button>
-                                            <input
-                                              type="number"
+                                            <NumericQuantityInput
                                               value={currentVal}
-                                              onChange={(e) =>
-                                                setAdjustQty({
-                                                  ...adjustQty,
-                                                  [p.sku]: Math.max(
-                                                    0,
-                                                    parseInt(e.target.value) || 0
-                                                  ),
-                                                })
-                                              }
-                                              className="w-16 h-10 2xl:w-20 text-center font-mono font-black text-sm 2xl:text-base border-2 border-slate-200 rounded-xl text-slate-800 focus:border-primary focus:ring-0"
+                                              onChange={(quantity) => setAdjustQty({ ...adjustQty, [p.sku]: quantity })}
+                                              label={`Stock level for ${p.product_name}`}
+                                              min={0}
                                             />
                                             <button
-                                              onClick={() =>
-                                                handleStepQty(p.sku, 1, p.warehouse_stock)
-                                              }
-                                              className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                            >
-                                              <Plus size={14} className="stroke-[3]" />
-                                            </button>
-                                            <button
+                                              type="button"
                                               onClick={() =>
                                                 handleApplyAdjustment(p.sku, p.warehouse_stock, true)
                                               }
@@ -563,7 +489,8 @@ export default function StockList({
                                                 adjustQty[p.sku] === undefined ||
                                                 adjustQty[p.sku] === p.warehouse_stock
                                               }
-                                              className={`ml-1 p-2 2xl:p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                                              aria-label={`Save stock level for ${p.product_name}`}
+                                              className={`ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-150 cursor-pointer ${
                                                 adjustQty[p.sku] !== undefined &&
                                                 adjustQty[p.sku] !== p.warehouse_stock
                                                   ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100 shadow-3xs"
@@ -578,7 +505,7 @@ export default function StockList({
                                         {isOwner && (
                                           <>
                                             <td className="px-4 py-3 border-r border-slate-200 text-right font-mono font-black text-slate-900 text-sm 2xl:px-6 2xl:py-4 2xl:text-base">
-                                              ₱{p.retail_price.toFixed(2)}
+                                              {formatCurrency(p.retail_price)}
                                             </td>
                                             <td className="px-4 py-3 text-right 2xl:px-6 2xl:py-4">
                                               <Button
@@ -604,7 +531,7 @@ export default function StockList({
                       })}
                     </tbody>
                   </table>
-                </div>
+                </DataTableScroll>
 
                 {/* Mobile */}
                 <div className="xl:hidden grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
@@ -628,50 +555,37 @@ export default function StockList({
                             <span className="text-xs font-bold text-slate-500 capitalize bg-slate-100 px-2.5 py-1 rounded-xl">
                               {p.category}
                             </span>
-                            <span className="text-xs text-slate-500 font-extrabold mt-1.5">
-                              SRP: ₱{p.retail_price.toFixed(2)}
-                            </span>
+                            {isOwner && (
+                              <span className="text-xs text-slate-500 font-extrabold mt-1.5">
+                                SRP: {formatCurrency(p.retail_price)}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex justify-between items-center bg-[#faf8f5] p-3 rounded-xl border border-[#ece5da]">
+                        <div className="flex flex-col gap-3 bg-[#faf8f5] p-3 rounded-xl border border-[#ece5da] sm:flex-row sm:items-center sm:justify-between">
                           <div className="text-xs text-[#2d1f0e] font-bold">
                             Current:{" "}
                             <span className="font-black text-slate-900 text-sm block md:inline">
-                              {p.warehouse_stock} units
+                              {formatProductQuantity(p, p.warehouse_stock)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleStepQty(p.sku, -1, p.warehouse_stock)}
-                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer active:scale-95"
-                            >
-                              <Minus size={12} className="stroke-[2]" />
-                            </button>
-                            <input
-                              type="number"
+                          <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                            <NumericQuantityInput
                               value={currentVal}
-                              onChange={(e) =>
-                                setAdjustQty({
-                                  ...adjustQty,
-                                  [p.sku]: Math.max(0, parseInt(e.target.value) || 0),
-                                })
-                              }
-                              className="w-14 h-9 text-center font-mono font-bold text-xs p-1 bg-white border border-slate-200 rounded-lg text-slate-800"
+                              onChange={(quantity) => setAdjustQty({ ...adjustQty, [p.sku]: quantity })}
+                              label={`Stock level for ${p.product_name}`}
+                              min={0}
                             />
                             <button
-                              onClick={() => handleStepQty(p.sku, 1, p.warehouse_stock)}
-                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer active:scale-95"
-                            >
-                              <Plus size={12} className="stroke-[2]" />
-                            </button>
-                            <button
+                              type="button"
                               onClick={() => handleApplyAdjustment(p.sku, p.warehouse_stock, true)}
                               disabled={
                                 actionLoading === p.sku ||
                                 adjustQty[p.sku] === undefined ||
                                 adjustQty[p.sku] === p.warehouse_stock
                               }
-                              className={`p-2 rounded-lg transition-all duration-150 active:scale-95 ${
+                              aria-label={`Save stock level for ${p.product_name}`}
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
                                 adjustQty[p.sku] !== undefined &&
                                 adjustQty[p.sku] !== p.warehouse_stock
                                   ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100"
@@ -686,12 +600,15 @@ export default function StockList({
                           <span>
                             Pack: {p.pack_qty || 1} • Shelf Life: {p.storage_life || "-"}
                           </span>
-                          <button
-                            onClick={() => onEditProduct(p)}
-                            className="text-[#885625] hover:underline flex items-center gap-1"
-                          >
-                            Edit SKU Settings <Edit3 size={12} />
-                          </button>
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => onEditProduct(p)}
+                              className="flex min-h-10 items-center gap-1 text-[#885625] hover:underline"
+                            >
+                              Edit SKU Settings <Edit3 size={12} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -710,30 +627,30 @@ export default function StockList({
             ) : rawViewMode === "flat" ? (
               /* ── FLAT VIEW (original) ── */
               <>
-                <div className="hidden xl:block overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-slate-200 text-sm text-slate-700">
+                <DataTableScroll label="Raw material stock levels" className="hidden overflow-x-auto xl:block">
+                  <table className="w-full min-w-[70rem] text-left border-collapse border border-slate-200 text-sm text-slate-700" aria-label="Raw material stock levels">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                        <th className="px-6 py-4 border-r border-slate-200">Ingredient Name</th>
-                        <th className="px-6 py-4 border-r border-slate-200">Category</th>
-                        <th className="px-6 py-4 border-r border-slate-200">Assigned Supplier</th>
-                        <th className="px-6 py-4 border-r border-slate-200 text-right">Available Stock</th>
-                        <th className="px-6 py-4 border-r border-slate-200 text-center">Set Stock Level</th>
-                        {isOwner && <th className="px-6 py-4 border-r border-slate-200 text-right">Unit Cost</th>}
-                        <th className={`px-6 py-4 text-center ${isOwner ? "border-r border-slate-200" : ""}`}>Status</th>
-                        {isOwner && <th className="px-6 py-4 text-right">Edit</th>}
+                        <th scope="col" className="px-6 py-4 border-r border-slate-200">Ingredient Name</th>
+                        <th scope="col" className="px-6 py-4 border-r border-slate-200">Category</th>
+                        <th scope="col" className="px-6 py-4 border-r border-slate-200">Assigned Supplier</th>
+                        <th scope="col" className="px-6 py-4 border-r border-slate-200 text-right">Available Stock</th>
+                        <th scope="col" className="px-6 py-4 border-r border-slate-200 text-center">Set Stock Level</th>
+                        {isOwner && <th scope="col" className="px-6 py-4 border-r border-slate-200 text-right">Unit Cost</th>}
+                        <th scope="col" className={`px-6 py-4 text-center ${isOwner ? "border-r border-slate-200" : ""}`}>Status</th>
+                        {isOwner && <th scope="col" className="px-6 py-4 text-right">Edit</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
                       {filteredIngredients.map((ing) => renderIngredientRow(ing))}
                     </tbody>
                   </table>
-                </div>
+                </DataTableScroll>
 
                 {/* Mobile flat */}
                 <div className="xl:hidden grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
                   {filteredIngredients.map((ing) => {
-                    const isLow = (ing.available_stock || 0) <= (ing.reorder_level || 100);
+                    const isLow = (ing.available_stock ?? 0) <= (ing.reorder_level ?? 100);
                     const currentVal =
                       adjustQty[ing.id] !== undefined ? adjustQty[ing.id] : ing.available_stock;
                     return (
@@ -752,53 +669,34 @@ export default function StockList({
                           </div>
                           <div className="flex flex-col items-end gap-1.5">
                             {isLow ? (
-                              <Badge variant="danger" className="py-1 px-2.5 rounded-lg text-[10px] font-bold">
-                                Low Stock
-                              </Badge>
+                              <StatusBadge status="low stock" label="Low Stock" />
                             ) : (
-                              <Badge variant="success" className="py-1 px-2.5 rounded-lg text-[10px] font-bold">
-                                Healthy
-                              </Badge>
+                              <StatusBadge status="healthy" />
                             )}
                             {isOwner && (
                               <span className="text-xs text-slate-500 font-mono font-bold mt-1">
-                                ₱{((ing.price ?? 0) / (ing.net_weight || 1)).toFixed(4)}/{ing.unit}
+                                {formatCurrency((ing.price ?? 0) / (ing.net_weight || 1))}/{ing.unit}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex justify-between items-center bg-[#faf8f5] p-3 rounded-xl border border-[#ece5da]">
+                        <div className="flex flex-col gap-3 bg-[#faf8f5] p-3 rounded-xl border border-[#ece5da] sm:flex-row sm:items-center sm:justify-between">
                           <div className="text-xs text-[#2d1f0e] font-bold">
                             Stock:{" "}
                             <span className="font-black text-slate-900 text-sm block md:inline">
                               {ing.available_stock} {ing.unit}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleStepQty(ing.id, -100, ing.available_stock)}
-                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer active:scale-95"
-                            >
-                              <Minus size={12} className="stroke-[2]" />
-                            </button>
-                            <input
-                              type="number"
+                          <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                            <NumericQuantityInput
                               value={currentVal}
-                              onChange={(e) =>
-                                setAdjustQty({
-                                  ...adjustQty,
-                                  [ing.id]: Math.max(0, parseFloat(e.target.value) || 0),
-                                })
-                              }
-                              className="w-14 h-9 text-center font-mono font-bold text-xs p-1 bg-white border border-slate-200 rounded-lg"
+                              onChange={(quantity) => setAdjustQty({ ...adjustQty, [ing.id]: quantity })}
+                              label={`Stock level for ${ing.name}`}
+                              min={0}
+                              step={100}
                             />
                             <button
-                              onClick={() => handleStepQty(ing.id, 100, ing.available_stock)}
-                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 cursor-pointer active:scale-95"
-                            >
-                              <Plus size={12} className="stroke-[2]" />
-                            </button>
-                            <button
+                              type="button"
                               onClick={() =>
                                 handleApplyAdjustment(ing.id, ing.available_stock, false)
                               }
@@ -807,7 +705,8 @@ export default function StockList({
                                 adjustQty[ing.id] === undefined ||
                                 adjustQty[ing.id] === ing.available_stock
                               }
-                              className={`p-2 rounded-lg transition-all duration-150 active:scale-95 ${
+                              aria-label={`Save stock level for ${ing.name}`}
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
                                 adjustQty[ing.id] !== undefined &&
                                 adjustQty[ing.id] !== ing.available_stock
                                   ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100"
@@ -822,12 +721,15 @@ export default function StockList({
                           <span>
                             Category: {ing.category || "Food"} • Brand: {ing.brand || "-"}
                           </span>
-                          <button
-                            onClick={() => onEditIngredient(ing)}
-                            className="text-[#885625] hover:underline flex items-center gap-1"
-                          >
-                            Edit Ingredient <Edit3 size={12} />
-                          </button>
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => onEditIngredient(ing)}
+                              className="flex min-h-10 items-center gap-1 text-[#885625] hover:underline"
+                            >
+                              Edit Ingredient <Edit3 size={12} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -840,14 +742,18 @@ export default function StockList({
                 {ingredientGroups.map((group) => {
                   const expanded = isGroupExpanded(group.productName);
                   const lowCount = group.items.filter(
-                    (ing) => (ing.available_stock || 0) <= (ing.reorder_level || 100)
+                    (ing) => (ing.available_stock ?? 0) <= (ing.reorder_level ?? 100)
                   ).length;
+                  const groupId = `ingredient-group-${group.productName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
 
                   return (
                     <div key={group.productName}>
                       {/* Product Group Header — clickable to collapse */}
                       <button
+                        type="button"
                         onClick={() => toggleGroup(group.productName)}
+                        aria-expanded={expanded}
+                        aria-controls={groupId}
                         className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#faf7f3] to-white hover:from-[#f5ede0] transition-all cursor-pointer group"
                       >
                         <div className="flex items-center gap-3">
@@ -890,27 +796,27 @@ export default function StockList({
 
                       {/* Ingredients Table — collapsible */}
                       {expanded && (
-                        <div className="border-t border-slate-100 overflow-x-auto">
-                          <table className="w-full text-left border-collapse border border-slate-200 text-sm text-slate-700">
+                        <DataTableScroll id={groupId} label={`${group.productName} ingredients`} className="border-t border-slate-100 overflow-x-auto">
+                          <table className="w-full min-w-[70rem] text-left border-collapse border border-slate-200 text-sm text-slate-700" aria-label={`${group.productName} ingredients`}>
                             <thead>
                               <tr className="bg-slate-50/70 text-slate-400 font-black uppercase tracking-wider text-[10px]">
-                                <th className="pl-16 pr-6 py-3 border-r border-slate-200">Ingredient Name</th>
-                                <th className="px-6 py-3 border-r border-slate-200">Category</th>
-                                <th className="px-6 py-3 border-r border-slate-200">Supplier</th>
-                                <th className="px-6 py-3 border-r border-slate-200 text-right">Stock</th>
-                                <th className="px-6 py-3 border-r border-slate-200 text-center">Adjust</th>
+                                <th scope="col" className="pl-16 pr-6 py-3 border-r border-slate-200">Ingredient Name</th>
+                                <th scope="col" className="px-6 py-3 border-r border-slate-200">Category</th>
+                                <th scope="col" className="px-6 py-3 border-r border-slate-200">Supplier</th>
+                                <th scope="col" className="px-6 py-3 border-r border-slate-200 text-right">Stock</th>
+                                <th scope="col" className="px-6 py-3 border-r border-slate-200 text-center">Adjust</th>
                                 {isOwner && (
-                                  <th className="px-6 py-3 border-r border-slate-200 text-right">Unit Cost</th>
+                                  <th scope="col" className="px-6 py-3 border-r border-slate-200 text-right">Unit Cost</th>
                                 )}
-                                <th className={`px-6 py-3 text-center ${isOwner ? "border-r border-slate-200" : ""}`}>Status</th>
+                                <th scope="col" className={`px-6 py-3 text-center ${isOwner ? "border-r border-slate-200" : ""}`}>Status</th>
                                 {isOwner && (
-                                  <th className="px-6 py-3 text-right">Edit</th>
+                                  <th scope="col" className="px-6 py-3 text-right">Edit</th>
                                 )}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                               {group.items.map((ing) => {
-                                const isLow = (ing.available_stock || 0) <= (ing.reorder_level || 100);
+                                const isLow = (ing.available_stock ?? 0) <= (ing.reorder_level ?? 100);
                                 const currentVal =
                                   adjustQty[ing.id] !== undefined
                                     ? adjustQty[ing.id]
@@ -943,37 +849,15 @@ export default function StockList({
                                     </td>
                                     <td className="px-6 py-3.5 border-r border-slate-200">
                                       <div className="flex justify-center items-center gap-2">
-                                        <button
-                                          onClick={() =>
-                                            handleStepQty(ing.id, -100, ing.available_stock)
-                                          }
-                                          className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                        >
-                                          <Minus size={11} className="stroke-[3]" />
-                                        </button>
-                                        <input
-                                          type="number"
+                                        <NumericQuantityInput
                                           value={currentVal}
-                                          onChange={(e) =>
-                                            setAdjustQty({
-                                              ...adjustQty,
-                                              [ing.id]: Math.max(
-                                                0,
-                                                parseFloat(e.target.value) || 0
-                                              ),
-                                            })
-                                          }
-                                          className="w-18 h-8 text-center font-mono font-black text-xs border-2 border-slate-200 rounded-lg text-slate-800 focus:border-primary focus:ring-0"
+                                          onChange={(quantity) => setAdjustQty({ ...adjustQty, [ing.id]: quantity })}
+                                          label={`Stock level for ${ing.name}`}
+                                          min={0}
+                                          step={100}
                                         />
                                         <button
-                                          onClick={() =>
-                                            handleStepQty(ing.id, 100, ing.available_stock)
-                                          }
-                                          className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                        >
-                                          <Plus size={11} className="stroke-[3]" />
-                                        </button>
-                                        <button
+                                          type="button"
                                           onClick={() =>
                                             handleApplyAdjustment(
                                               ing.id,
@@ -986,7 +870,8 @@ export default function StockList({
                                             adjustQty[ing.id] === undefined ||
                                             adjustQty[ing.id] === ing.available_stock
                                           }
-                                          className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                                          aria-label={`Save stock level for ${ing.name}`}
+                                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-150 cursor-pointer ${
                                             adjustQty[ing.id] !== undefined &&
                                             adjustQty[ing.id] !== ing.available_stock
                                               ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100"
@@ -999,25 +884,14 @@ export default function StockList({
                                     </td>
                                     {isOwner && (
                                       <td className="px-6 py-3.5 border-r border-slate-200 text-right text-slate-400 font-mono font-bold text-xs">
-                                        ₱{((ing.price ?? 0) / (ing.net_weight || 1)).toFixed(4)} /{" "}
-                                        {ing.unit}
+                                        {formatCurrency((ing.price ?? 0) / (ing.net_weight || 1))} / {ing.unit}
                                       </td>
                                     )}
                                     <td className={`px-6 py-3.5 text-center ${isOwner ? "border-r border-slate-200" : ""}`}>
                                       {isLow ? (
-                                        <Badge
-                                          variant="danger"
-                                          className="py-0.5 px-2 text-[10px] rounded-md font-bold"
-                                        >
-                                          Low
-                                        </Badge>
+                                        <StatusBadge status="low stock" label="Low Stock" />
                                       ) : (
-                                        <Badge
-                                          variant="success"
-                                          className="py-0.5 px-2 text-[10px] rounded-md font-bold"
-                                        >
-                                          OK
-                                        </Badge>
+                                        <StatusBadge status="healthy" />
                                       )}
                                     </td>
                                     {isOwner && (
@@ -1038,7 +912,7 @@ export default function StockList({
                               })}
                             </tbody>
                           </table>
-                        </div>
+                        </DataTableScroll>
                       )}
                     </div>
                   );
@@ -1048,7 +922,10 @@ export default function StockList({
                 {ungroupedIngredients.length > 0 && (
                   <div>
                     <button
+                      type="button"
                       onClick={() => toggleGroup("__ungrouped__")}
+                      aria-expanded={isGroupExpanded("__ungrouped__")}
+                      aria-controls="ingredient-group-unassigned"
                       className="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-50 to-white hover:from-slate-100 transition-all cursor-pointer group"
                     >
                       <div className="flex items-center gap-3">
@@ -1073,28 +950,28 @@ export default function StockList({
                     </button>
 
                     {isGroupExpanded("__ungrouped__") && (
-                      <div className="border-t border-slate-100 overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-sm text-slate-700">
+                      <DataTableScroll id="ingredient-group-unassigned" label="Unassigned ingredients" className="border-t border-slate-100 overflow-x-auto">
+                        <table className="w-full min-w-[70rem] text-left border-collapse text-sm text-slate-700" aria-label="Unassigned ingredients">
                           <thead>
                             <tr className="bg-slate-50/70 text-slate-400 font-black uppercase tracking-wider text-[10px]">
-                              <th className="pl-16 pr-6 py-3">Ingredient Name</th>
-                              <th className="px-6 py-3">Category</th>
-                              <th className="px-6 py-3">Supplier</th>
-                              <th className="px-6 py-3 text-right">Stock</th>
-                              <th className="px-6 py-3 text-center">Adjust</th>
+                              <th scope="col" className="pl-16 pr-6 py-3">Ingredient Name</th>
+                              <th scope="col" className="px-6 py-3">Category</th>
+                              <th scope="col" className="px-6 py-3">Supplier</th>
+                              <th scope="col" className="px-6 py-3 text-right">Stock</th>
+                              <th scope="col" className="px-6 py-3 text-center">Adjust</th>
                               {isOwner && (
-                                <th className="px-6 py-3 text-right">Unit Cost</th>
+                                <th scope="col" className="px-6 py-3 text-right">Unit Cost</th>
                               )}
-                              <th className="px-6 py-3 text-center">Status</th>
+                              <th scope="col" className="px-6 py-3 text-center">Status</th>
                               {isOwner && (
-                                <th className="px-6 py-3 text-right">Edit</th>
+                                <th scope="col" className="px-6 py-3 text-right">Edit</th>
                               )}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                             {ungroupedIngredients.map((ing) => {
                               const isLow =
-                                (ing.available_stock || 0) <= (ing.reorder_level || 100);
+                                (ing.available_stock ?? 0) <= (ing.reorder_level ?? 100);
                               const currentVal =
                                 adjustQty[ing.id] !== undefined
                                   ? adjustQty[ing.id]
@@ -1127,37 +1004,15 @@ export default function StockList({
                                   </td>
                                   <td className="px-6 py-3.5">
                                     <div className="flex justify-center items-center gap-2">
-                                      <button
-                                        onClick={() =>
-                                          handleStepQty(ing.id, -100, ing.available_stock)
-                                        }
-                                        className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                      >
-                                        <Minus size={11} className="stroke-[3]" />
-                                      </button>
-                                      <input
-                                        type="number"
+                                      <NumericQuantityInput
                                         value={currentVal}
-                                        onChange={(e) =>
-                                          setAdjustQty({
-                                            ...adjustQty,
-                                            [ing.id]: Math.max(
-                                              0,
-                                              parseFloat(e.target.value) || 0
-                                            ),
-                                          })
-                                        }
-                                        className="w-18 h-8 text-center font-mono font-black text-xs border-2 border-slate-200 rounded-lg text-slate-800 focus:border-primary focus:ring-0"
+                                        onChange={(quantity) => setAdjustQty({ ...adjustQty, [ing.id]: quantity })}
+                                        label={`Stock level for ${ing.name}`}
+                                        min={0}
+                                        step={100}
                                       />
                                       <button
-                                        onClick={() =>
-                                          handleStepQty(ing.id, 100, ing.available_stock)
-                                        }
-                                        className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                      >
-                                        <Plus size={11} className="stroke-[3]" />
-                                      </button>
-                                      <button
+                                        type="button"
                                         onClick={() =>
                                           handleApplyAdjustment(ing.id, ing.available_stock, false)
                                         }
@@ -1166,7 +1021,8 @@ export default function StockList({
                                           adjustQty[ing.id] === undefined ||
                                           adjustQty[ing.id] === ing.available_stock
                                         }
-                                        className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                                        aria-label={`Save stock level for ${ing.name}`}
+                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-all duration-150 cursor-pointer ${
                                           adjustQty[ing.id] !== undefined &&
                                           adjustQty[ing.id] !== ing.available_stock
                                             ? "bg-primary hover:bg-primary-hover text-white opacity-100 scale-100"
@@ -1179,25 +1035,14 @@ export default function StockList({
                                   </td>
                                   {isOwner && (
                                     <td className="px-6 py-3.5 text-right text-slate-400 font-mono font-bold text-xs">
-                                      ₱{((ing.price ?? 0) / (ing.net_weight || 1)).toFixed(4)} /{" "}
-                                      {ing.unit}
+                                      {formatCurrency((ing.price ?? 0) / (ing.net_weight || 1))} / {ing.unit}
                                     </td>
                                   )}
                                   <td className="px-6 py-3.5 text-center">
                                     {isLow ? (
-                                      <Badge
-                                        variant="danger"
-                                        className="py-0.5 px-2 text-[10px] rounded-md font-bold"
-                                      >
-                                        Low
-                                      </Badge>
+                                      <StatusBadge status="low stock" label="Low Stock" />
                                     ) : (
-                                      <Badge
-                                        variant="success"
-                                        className="py-0.5 px-2 text-[10px] rounded-md font-bold"
-                                      >
-                                        OK
-                                      </Badge>
+                                      <StatusBadge status="healthy" />
                                     )}
                                   </td>
                                   {isOwner && (
@@ -1218,7 +1063,7 @@ export default function StockList({
                             })}
                           </tbody>
                         </table>
-                      </div>
+                      </DataTableScroll>
                     )}
                   </div>
                 )}

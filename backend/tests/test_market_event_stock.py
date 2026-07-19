@@ -439,6 +439,50 @@ class MarketEventStockTests(unittest.TestCase):
         # Allocated 5 initially, checked out 2 as preorder -> remaining should be 3
         self.assertEqual(alloc_qty, 3)
 
+    def test_create_recurring_market_events(self):
+        # Create a weekly recurring event series (3 occurrences)
+        payload = schemas.MarketEventCreate(
+            name="Recurring Weekly Market",
+            event_date="2026-07-20",
+            location="Elbi",
+            status="Draft",
+            initial_cash_balance=1000.0,
+            allocations=[
+                schemas.MarketEventAllocationCreate(sku="A-SKU", quantity=2),
+            ],
+            recurrence="weekly",
+            recurrence_count=3
+        )
+        self.add_product("A-SKU", 10)
+        
+        event = create_market_event(payload, self.db, self.user)
+        self.assertEqual(event.name, "Recurring Weekly Market")
+        self.assertEqual(event.event_date, "2026-07-20")
+        
+        # Verify that three events exist in the database with this name
+        events = self.db.query(models.MarketEvent).filter_by(
+            name="Recurring Weekly Market",
+            is_deleted=False
+        ).order_by(models.MarketEvent.event_date).all()
+        
+        self.assertEqual(len(events), 3)
+        
+        # Check first event
+        self.assertEqual(events[0].event_date, "2026-07-20")
+        self.assertEqual(len(events[0].allocations), 1)
+        self.assertEqual(events[0].allocations[0].sku, "A-SKU")
+        self.assertEqual(events[0].allocations[0].quantity, 2)
+        
+        # Check second event
+        self.assertEqual(events[1].event_date, "2026-07-27")
+        self.assertEqual(events[1].status, "Draft")
+        self.assertEqual(len(events[1].allocations), 0)
+        
+        # Check third event
+        self.assertEqual(events[2].event_date, "2026-08-03")
+        self.assertEqual(events[2].status, "Draft")
+        self.assertEqual(len(events[2].allocations), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

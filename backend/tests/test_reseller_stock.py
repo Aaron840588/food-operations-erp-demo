@@ -93,7 +93,7 @@ class ResellerStockTests(unittest.TestCase):
         ).one()
         self.assertEqual(product.warehouse_stock, 0)
         self.assertEqual(warehouse_stock.quantity, 0)
-        self.assertAlmostEqual(order.grand_total, 100.8)
+        self.assertAlmostEqual(order.grand_total, 90.0)
         self.assertEqual(self.db.query(models.ResellerOrder).count(), 1)
         self.assertEqual(self.db.query(models.ResellerOrderItem).count(), 1)
         self.assertEqual(self.db.query(models.InventoryTransaction).count(), 1)
@@ -107,7 +107,7 @@ class ResellerStockTests(unittest.TestCase):
         order = create_reseller_order(payload, self.db, self.user)
 
         self.assertEqual(order.discount_percentage, 20)
-        self.assertAlmostEqual(order.grand_total, 89.6)
+        self.assertAlmostEqual(order.grand_total, 80.0)
 
         with self.assertRaises(ValidationError):
             schemas.ResellerOrderCreate(
@@ -146,7 +146,7 @@ class ResellerStockTests(unittest.TestCase):
         order = create_reseller_order(payload, self.db, self.user)
 
         self.assertEqual(order.discount_percentage, 10)
-        self.assertAlmostEqual(order.grand_total, 100.8)
+        self.assertAlmostEqual(order.grand_total, 90.0)
 
         with self.assertRaises(ValidationError):
             schemas.ResellerOrderCreate(

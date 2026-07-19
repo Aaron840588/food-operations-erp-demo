@@ -1,7 +1,17 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Loader2, Search, Filter } from "lucide-react";
+import {
+  DataTableScroll,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TablePagination,
+  TableRow,
+} from "@/components/ui/DataTable";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { InventoryTransactionOut } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 
 interface AuditLedgerProps {
   transactions: InventoryTransactionOut[];
@@ -64,6 +74,7 @@ export default function AuditLedger({
               placeholder="Search logs, operator, or notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search inventory audit logs"
               style={{ paddingLeft: "3rem" }}
               className="w-full pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-primary/20 bg-white font-semibold text-slate-700 h-12"
             />
@@ -77,6 +88,7 @@ export default function AuditLedger({
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
+              aria-label="Filter inventory audit logs by transaction type"
               className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-primary/20 bg-white font-semibold text-slate-655 h-12"
             >
               {transactionTypes.map(t => (
@@ -89,46 +101,40 @@ export default function AuditLedger({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
+        <DataTableScroll label="Inventory audit ledger" className="overflow-x-auto">
+          <table className="w-full min-w-[70rem] text-left border-collapse text-sm" aria-label="Inventory audit ledger">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                <th className="px-6 py-4.5">Timestamp</th>
-                <th className="px-6 py-4.5">Log Operator</th>
-                <th className="px-6 py-4.5">Warehouse Location</th>
-                <th className="px-6 py-4.5">Target Item</th>
-                <th className="px-6 py-4.5">Transaction Type</th>
-                <th className="px-6 py-4.5 text-right">Adjustment Qty</th>
-                <th className="px-6 py-4.5">Ref Batch</th>
-                <th className="px-6 py-4.5">Log Note / Remarks</th>
-              </tr>
+              <TableHeaderRow>
+                <TableHeaderCell>Timestamp</TableHeaderCell>
+                <TableHeaderCell>Log Operator</TableHeaderCell>
+                <TableHeaderCell>Warehouse Location</TableHeaderCell>
+                <TableHeaderCell>Target Item</TableHeaderCell>
+                <TableHeaderCell>Transaction Type</TableHeaderCell>
+                <TableHeaderCell align="right">Adjustment Qty</TableHeaderCell>
+                <TableHeaderCell>Ref Batch</TableHeaderCell>
+                <TableHeaderCell>Log Note / Remarks</TableHeaderCell>
+              </TableHeaderRow>
             </thead>
             <tbody className="divide-y divide-slate-155 font-semibold text-slate-700">
               {filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-slate-450 font-bold italic text-base">
-                    No matching transaction logs found in database ledger.
-                  </td>
-                </tr>
+                <TableEmptyState colSpan={8} title="No matching transaction logs" description="Clear the search or select another transaction type." />
               ) : (
                 filteredTransactions.map((tx) => {
                   const isPositive = tx.qty > 0;
                   return (
-                    <tr key={tx.id} className="hover:bg-slate-50/20 transition-colors">
+                    <TableRow key={tx.id}>
                       <td className="px-6 py-4 font-mono text-xs text-slate-500 font-bold">
-                        {tx.created_at ? new Date(tx.created_at).toLocaleString() : "—"}
+                        {formatDateTime(tx.created_at)}
                       </td>
                       <td className="px-6 py-4 font-black text-slate-850 text-base">{tx.user_username}</td>
                       <td className="px-6 py-4 text-slate-500">{tx.warehouse_name || "Main Facility"}</td>
                       <td className="px-6 py-4 font-black text-slate-900 text-base">{tx.item_name}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs uppercase border font-black ${
-                          tx.transaction_type.includes("add") || tx.transaction_type.includes("receive") || isPositive
-                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                             : "bg-rose-50 text-rose-700 border-rose-200"
-                        }`}>
-                          {tx.transaction_type.replace("_", " ")}
-                        </span>
+                        <StatusBadge
+                          status={isPositive ? "healthy" : "out of stock"}
+                          label={tx.transaction_type.replace(/_/g, " ")}
+                          className="uppercase"
+                        />
                       </td>
                       <td className={`px-6 py-4 text-right font-mono font-black text-base ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
                         {isPositive ? "+" : ""}{tx.qty}
@@ -137,16 +143,16 @@ export default function AuditLedger({
                       <td className="px-6 py-4 text-slate-600 font-semibold max-w-xs truncate text-base" title={tx.notes ?? undefined}>
                         {tx.notes || "-"}
                       </td>
-                    </tr>
+                    </TableRow>
                   );
                 })
               )}
             </tbody>
           </table>
-        </div>
+        </DataTableScroll>
         
         {hasMore && (
-          <div className="p-5 border-t border-slate-100 flex justify-center bg-slate-50/30">
+          <TablePagination className="justify-center" action={
             <button
               onClick={onLoadMore}
               disabled={loadingMore}
@@ -161,7 +167,7 @@ export default function AuditLedger({
                 <span>Load More Logs</span>
               )}
             </button>
-          </div>
+          } />
         )}
       </CardContent>
     </Card>

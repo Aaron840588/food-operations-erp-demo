@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Plus, ArrowRightLeft } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
-import { ProductSizeBadge } from "@/components/ui/ProductSizeBadge";
+import { ProductDisplay } from "@/components/ui/ProductDisplay";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, type ProductSKUOut, type RawIngredientOut, type WarehouseOut, type WarehouseStockOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { formatProductQuantity, isCurrentLineupProduct } from "@/lib/utils";
 
 interface WarehouseManagerProps {
   warehouses: WarehouseOut[];
@@ -35,6 +36,9 @@ export default function WarehouseManager({
   const [transferSku, setTransferSku] = useState("");
   const [transferQty, setTransferQty] = useState("");
   const [transferring, setTransferring] = useState(false);
+  const currentProducts = products.filter(isCurrentLineupProduct);
+  const productBySku = new Map(currentProducts.map((product) => [product.sku, product]));
+  const ingredientById = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
 
   const handleRegisterWarehouse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,34 +119,56 @@ export default function WarehouseManager({
             <CardTitle>Warehouse Directory</CardTitle>
             <CardDescription>Multi-location stock distributions</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4" role="list" aria-label="Warehouse locations">
             {warehouses.map((wh) => {
-              const whStocks = warehouseStocks.filter(s => s.warehouse_id === wh.id && s.quantity > 0);
+              const whStocks = warehouseStocks.filter(
+                (stock) =>
+                  stock.warehouse_id === wh.id &&
+                  stock.quantity > 0 &&
+                  (!stock.sku || productBySku.has(stock.sku))
+              );
               
               return (
-                <div key={wh.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50 shadow-3xs hover:border-slate-350 hover:scale-[1.01] transition-transform duration-150">
+                <div key={wh.id} role="listitem" className="border border-slate-200 rounded-xl p-4 bg-slate-50 shadow-3xs hover:border-slate-350 hover:scale-[1.01] transition-transform duration-150">
                   <div className="flex justify-between items-start mb-3 border-b border-slate-200/50 pb-2">
                     <div>
                       <span className="font-heading font-extrabold text-slate-900 text-xs uppercase tracking-wide">{wh.name}</span>
                       <span className="text-[10px] text-slate-450 font-bold block mt-0.5">{wh.location || "No Address Logged"}</span>
                     </div>
-                    <Badge variant={wh.is_active ? "success" : "neutral"}>
-                      {wh.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <StatusBadge status={wh.is_active ? "active" : "inactive"} />
                   </div>
                   
                   {whStocks.length === 0 ? (
                     <p className="text-[10px] text-slate-400 italic">No inventory currently stocked in this warehouse.</p>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700">
-                      {whStocks.map((s, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white border border-slate-200 px-3 py-1.5 rounded-xl hover:scale-[1.01] transition-transform duration-150">
-                          <span className="flex min-w-0 items-center gap-2 pr-2"><span className="truncate">{s.ingredient_name || (s.sku ? s.product_name : s.sku)}</span>{s.sku && <ProductSizeBadge size={products.find(p => p.sku === s.sku)?.size} />}</span>
-                          <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-lg text-[9px]">
-                            {s.quantity} {s.ingredient_name ? "g" : "pcs"}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700" role="list" aria-label={`${wh.name} stock`}>
+                      {whStocks.map((stock) => {
+                        const product = stock.sku ? productBySku.get(stock.sku) : undefined;
+                        const ingredient = stock.raw_ingredient_id ? ingredientById.get(stock.raw_ingredient_id) : undefined;
+                        const quantityLabel = product
+                          ? formatProductQuantity(product, stock.quantity)
+                          : `${stock.quantity} ${ingredient?.unit || "units"}`;
+
+                        return (
+                          <div key={`${wh.id}-${stock.sku || stock.raw_ingredient_id}`} role="listitem" className="flex min-w-0 justify-between items-center gap-3 bg-white border border-slate-200 px-3 py-2 rounded-xl hover:scale-[1.01] transition-transform duration-150">
+                            {product && stock.sku ? (
+                              <ProductDisplay
+                                sku={stock.sku}
+                                productName={stock.product_name || product.product_name || stock.sku}
+                                category={product.category}
+                                size={product.size}
+                                isActive={product.is_active}
+                                variant="compact"
+                              />
+                            ) : (
+                              <span className="min-w-0 truncate font-bold">{stock.ingredient_name || ingredient?.name || `Ingredient #${stock.raw_ingredient_id}`}</span>
+                            )}
+                            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 font-mono text-[10px] font-bold text-slate-900">
+                              {quantityLabel}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -281,8 +307,8 @@ export default function WarehouseManager({
                   className="w-full text-xs font-semibold"
                 >
                   <option value="">Choose Finished SKU...</option>
-                  {products.map(p => (
-                    <option key={p.sku} value={p.sku}>{p.product_name} ({p.size})</option>
+                  {currentProducts.filter((product) => product.is_active !== false).map(p => (
+                    <option key={p.sku} value={p.sku}>{p.product_name} — {p.sku}</option>
                   ))}
                 </select>
               </div>

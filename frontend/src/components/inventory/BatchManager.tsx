@@ -1,10 +1,18 @@
 import React, { useState } from "react";
 import { Plus, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import {
+  DataTableScroll,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+} from "@/components/ui/DataTable";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api, type IngredientBatchOut, type RawIngredientOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/utils";
 
 interface BatchManagerProps {
   batches: IngredientBatchOut[];
@@ -54,8 +62,9 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
   const expiringSoonCount = batches.filter(b => {
     if (!b.expiry_date || b.quantity <= 0) return false;
     const exp = new Date(b.expiry_date);
-    return exp <= soon;
+    return exp > now && exp <= soon;
   }).length;
+  const ingredientUnits = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.unit]));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -68,67 +77,64 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
               <CardDescription>First-In-First-Out (FIFO) kitchen batches</CardDescription>
             </div>
             {expiringSoonCount > 0 && (
-              <Badge variant="danger" className="animate-pulse">
-                <AlertTriangle size={12} className="mr-1 inline" /> {expiringSoonCount} Expiring Soon
-              </Badge>
+              <div className="flex items-center gap-1 text-amber-700">
+                <AlertTriangle size={14} aria-hidden="true" />
+                <StatusBadge status="pending" label={`${expiringSoonCount} Expiring Soon`} className="animate-pulse" />
+              </div>
             )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <DataTableScroll label="Active ingredient batches" className="overflow-x-auto">
+            <table className="w-full min-w-[42rem] text-left border-collapse text-xs" aria-label="Active ingredient batches">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="px-6 py-3">Ingredient</th>
-                  <th className="px-6 py-3">Batch Code</th>
-                  <th className="px-6 py-3 text-right">Available Qty</th>
-                  <th className="px-6 py-3">Expiry Date</th>
-                  <th className="px-6 py-3">Status</th>
-                </tr>
+                <TableHeaderRow>
+                  <TableHeaderCell>Ingredient</TableHeaderCell>
+                  <TableHeaderCell>Batch Code</TableHeaderCell>
+                  <TableHeaderCell align="right">Available Qty</TableHeaderCell>
+                  <TableHeaderCell>Expiry Date</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                </TableHeaderRow>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {batches.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">
-                      No active raw material batches logged in the database.
-                    </td>
-                  </tr>
+                  <TableEmptyState colSpan={5} title="No active ingredient batches" description="Log a delivery receipt to begin FIFO tracking." />
                 ) : (
                   batches.map((b) => {
                     const isExhausted = b.quantity <= 0;
-                    let badgeType: "success" | "neutral" | "danger" | "warning" = "success";
+                    let badgeStatus = "healthy";
                     let label = "Healthy";
                     
                     if (isExhausted) {
-                      badgeType = "neutral";
+                      badgeStatus = "inactive";
                       label = "Exhausted";
                     } else if (b.expiry_date) {
                       const exp = new Date(b.expiry_date);
                       if (exp <= now) {
-                        badgeType = "danger";
+                        badgeStatus = "overdue";
                         label = "Expired";
                       } else if (exp <= soon) {
-                        badgeType = "warning";
+                        badgeStatus = "pending";
                         label = "Expiring";
                       }
                     }
 
                     return (
-                      <tr key={b.id} className={`hover:bg-slate-50/50 transition-colors ${isExhausted ? "opacity-60" : ""}`}>
+                      <TableRow key={b.id} className={isExhausted ? "opacity-60" : ""}>
                         <td className="px-6 py-3 font-extrabold text-slate-900">{b.ingredient_name || `Ingredient #${b.raw_ingredient_id}`}</td>
                         <td className="px-6 py-3 font-mono text-slate-450">{b.batch_code}</td>
-                        <td className="px-6 py-3 text-right font-mono font-bold text-slate-900">{b.quantity}</td>
-                        <td className="px-6 py-3 font-mono text-slate-500">{b.expiry_date || "No Expiry Limit"}</td>
+                        <td className="px-6 py-3 text-right font-mono font-bold text-slate-900">{b.quantity} {ingredientUnits.get(b.raw_ingredient_id) || "units"}</td>
+                        <td className="px-6 py-3 font-mono text-slate-500">{b.expiry_date ? formatDate(b.expiry_date) : "No expiry limit"}</td>
                         <td className="px-6 py-3">
-                          <Badge variant={badgeType}>{label}</Badge>
+                          <StatusBadge status={badgeStatus} label={label} />
                         </td>
-                      </tr>
+                      </TableRow>
                     );
                   })
                 )}
               </tbody>
             </table>
-          </div>
+          </DataTableScroll>
         </CardContent>
       </Card>
 
@@ -141,8 +147,9 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
         <CardContent>
           <form onSubmit={handleIntakeBatch} className="space-y-4">
             <div>
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Select Raw Ingredient</label>
+              <label htmlFor="batch-ingredient" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Select Raw Ingredient</label>
               <select
+                id="batch-ingredient"
                 value={intakeRawId}
                 onChange={(e) => setIntakeRawId(e.target.value)}
                 required
@@ -156,8 +163,9 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Batch Reference Code</label>
+              <label htmlFor="batch-code" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Batch Reference Code</label>
               <input
+                id="batch-code"
                 type="text"
                 required
                 placeholder="e.g. B-SUGAR-20260710"
@@ -169,8 +177,9 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Intake Quantity</label>
+                <label htmlFor="batch-quantity" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Intake Quantity</label>
                 <input
+                  id="batch-quantity"
                   type="number"
                   min={0.01}
                   step={0.01}
@@ -182,8 +191,9 @@ export default function BatchManager({ batches, ingredients, onRefresh }: BatchM
                 />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Expiry Date</label>
+                <label htmlFor="batch-expiry" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Expiry Date</label>
                 <input
+                  id="batch-expiry"
                   type="date"
                   value={intakeExpiry}
                   onChange={(e) => setIntakeExpiry(e.target.value)}

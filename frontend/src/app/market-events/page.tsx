@@ -4,8 +4,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api, UnconfirmedFinancialMutationError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import { getProductBusinessCategory, BUSINESS_CATEGORIES, getSizeBadgeStyle } from "@/lib/utils";
-import { ProductSizeBadge } from "@/components/ui/ProductSizeBadge";
+import {
+  getProductBusinessCategory,
+  BUSINESS_CATEGORIES,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatProductQuantity,
+  isCurrentLineupProduct,
+} from "@/lib/utils";
+import { ProductDisplay } from "@/components/ui/ProductDisplay";
+import { NumericQuantityInput } from "@/components/ui/NumericQuantityInput";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { 
   Store, 
   RefreshCw, 
@@ -20,7 +30,6 @@ import {
   Package, 
   TrendingUp, 
   X,
-  Minus,
   ShoppingCart,
   Search,
   Undo2,
@@ -59,210 +68,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { Modal, ConfirmationModal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { InventoryChecklist } from "@/components/inventory/InventoryChecklist";
 
-// ─────────────────────────────────────────────────────────────
-// INVENTORY CHECKLIST  – Phase 4 allocation UI
-// ─────────────────────────────────────────────────────────────
-interface InventoryChecklistProps {
-  products: any[];
-  allocations: { sku: string; quantity: number }[];
-  setAllocations: (a: { sku: string; quantity: number }[]) => void;
-  disabled?: boolean;
-}
-
-function InventoryChecklist({ products, allocations, setAllocations, disabled }: InventoryChecklistProps) {
-  const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("All");
-
-  // Eligible products: active + warehouse_stock > 0
-  const eligible = products.filter(p => {
-    if (p.sku === "SKU") return false;
-    if (p.is_active === false) return false;
-    const stock = p.warehouse_stock ?? 0;
-    return stock > 0;
-  });
-
-  const categories = ["All", ...Array.from(new Set(eligible.map((p: any) => getProductBusinessCategory(p)))).sort()];
-
-  const filtered = eligible.filter(p => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || p.product_name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
-    const matchCat = filterCat === "All" || getProductBusinessCategory(p) === filterCat;
-    return matchSearch && matchCat;
-  });
-
-  const allocMap = Object.fromEntries(allocations.map(a => [a.sku, a.quantity]));
-
-  const handleCheck = (sku: string, available: number) => {
-    if (allocMap[sku] !== undefined) {
-      // Uncheck: remove
-      setAllocations(allocations.filter(a => a.sku !== sku));
-    } else {
-      // Check: add with default qty = min(12, available)
-      const defaultQty = Math.min(12, available > 0 ? available : 1);
-      setAllocations([...allocations, { sku, quantity: defaultQty }]);
-    }
-  };
-
-  const handleQtyChange = (sku: string, qty: number, available: number) => {
-    const clamped = Math.min(Math.max(1, qty), available > 0 ? available : qty);
-    setAllocations(allocations.map(a => a.sku === sku ? { ...a, quantity: clamped } : a));
-  };
-
-  const selectedCount = allocations.length;
-  const totalUnits = allocations.reduce((s, a) => s + a.quantity, 0);
-
-  return (
-    <div className="space-y-3">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search product name or SKU…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft: "2.5rem" }}
-            className="w-full pr-3 h-9 text-xs font-semibold bg-white border border-slate-200 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-          />
-        </div>
-        <div className="flex gap-1 overflow-x-auto">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setFilterCat(cat)}
-              className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
-                filterCat === cat
-                  ? "bg-slate-900 text-white"
-                  : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Summary badge */}
-      {selectedCount > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded-xl text-xs font-bold text-primary">
-          <Check size={13} className="stroke-[3]" />
-          {selectedCount} product{selectedCount !== 1 ? "s" : ""} selected · {totalUnits} total units reserved
-        </div>
-      )}
-
-      {/* Checklist table */}
-      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto max-h-96 overflow-y-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead className="sticky top-0 z-10">
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-[10px]">
-              <th className="px-3 py-2.5 w-8"></th>
-              <th className="px-3 py-2.5">Product</th>
-              <th className="px-3 py-2.5 text-right">Available</th>
-              <th className="px-3 py-2.5 text-right">Reserved by others</th>
-              <th className="px-3 py-2.5 text-center w-32">Qty to Allocate</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-400 font-semibold italic">No matching products.</td></tr>
-            ) : (
-              filtered.map(p => {
-                const warehouseStock = p.warehouse_stock ?? 0;
-                const reservedOther = p.reserved_stock ?? 0;
-                const available = p.available_stock ?? Math.max(0, warehouseStock - reservedOther);
-                const isChecked = allocMap[p.sku] !== undefined;
-                const isOutOfStock = available <= 0;
-
-                return (
-                  <tr
-                    key={p.sku}
-                    className={`transition-colors ${
-                      isChecked ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-slate-50/50"
-                    } ${isOutOfStock && !isChecked ? "opacity-50" : ""}`}
-                  >
-                    <td className="px-3 py-2.5 text-center">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={disabled || (isOutOfStock && !isChecked)}
-                        onChange={() => handleCheck(p.sku, available)}
-                        className="w-4 h-4 rounded accent-primary cursor-pointer disabled:cursor-not-allowed"
-                        id={`alloc-check-${p.sku}`}
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <label htmlFor={`alloc-check-${p.sku}`} className="cursor-pointer">
-                        <span className="font-black text-slate-800 text-xs block">{p.product_name}</span>
-                        <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1.5 mt-0.5">
-                          {p.sku} <ProductSizeBadge size={p.size} sku={p.sku} />
-                          {isOutOfStock && <span className="text-rose-500 font-black">OUT OF STOCK</span>}
-                        </span>
-                      </label>
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
-                      <span className={`inline-block font-black font-mono text-[11px] px-2 py-0.5 rounded-lg ${
-                        available > 0
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                          : "bg-rose-50 text-rose-600 border border-rose-100"
-                      }`}>
-                        {available} units
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
-                      {reservedOther > 0 ? (
-                        <span className="text-[11px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg font-mono">
-                          {reservedOther} held
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-slate-300 font-semibold">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {isChecked ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => handleQtyChange(p.sku, (allocMap[p.sku] ?? 1) - 1, available)}
-                            className="w-6 h-6 rounded-md border border-slate-200 flex items-center justify-center bg-white hover:bg-slate-50 text-slate-500 transition-colors disabled:opacity-40"
-                          >
-                            <Minus size={10} className="stroke-[3]" />
-                          </button>
-                          <input
-                            type="number"
-                            min={1}
-                            max={available > 0 ? available : undefined}
-                            value={allocMap[p.sku]}
-                            disabled={disabled}
-                            onChange={e => handleQtyChange(p.sku, parseInt(e.target.value) || 1, available)}
-                            className="w-12 h-6 text-center font-mono font-black text-xs bg-white border border-slate-200 rounded-md outline-none focus:border-primary"
-                          />
-                          <button
-                            type="button"
-                            disabled={disabled || (allocMap[p.sku] ?? 0) >= available}
-                            onClick={() => handleQtyChange(p.sku, (allocMap[p.sku] ?? 1) + 1, available)}
-                            className="w-6 h-6 rounded-md border border-slate-200 flex items-center justify-center bg-white hover:bg-slate-50 text-slate-500 transition-colors disabled:opacity-40"
-                          >
-                            <Plus size={10} className="stroke-[3]" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="block text-center text-slate-300 text-[11px] font-semibold">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 function createMarketSaleClientReference(eventId: number): string {
   const suffix = globalThis.crypto?.randomUUID?.()
@@ -287,6 +94,7 @@ export default function MarketEventsPage() {
 
   // Phase 5: AI & Analytics States
   const [activeMainTab, setActiveMainTab] = useState<"scheduler" | "analytics" | "reconciliation">("scheduler");
+  const [schedulerFilter, setSchedulerFilter] = useState<"active" | "completed">("active");
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [reconciliationEventId, setReconciliationEventId] = useState<number | "">("");
@@ -314,6 +122,7 @@ export default function MarketEventsPage() {
   const [preorderCustomerName, setPreorderCustomerName] = useState("");
   const [preorderPaymentStatus, setPreorderPaymentStatus] = useState<"Paid" | "Unpaid">("Paid");
   const [preorderFulfillmentStatus, setPreorderFulfillmentStatus] = useState<"Pending" | "Picked Up">("Pending");
+  const [userRole, setUserRole] = useState("staff");
 
   // Phase 4: Enterprise Reports states
   const [selectedReportEvent, setSelectedReportEvent] = useState<any>(null);
@@ -344,6 +153,11 @@ export default function MarketEventsPage() {
   const [actualClosingCash, setActualClosingCash] = useState<number | "">("");
   const [cashAdjustments, setCashAdjustments] = useState<number | "">("");
   const [cashAdjustmentsNotes, setCashAdjustmentsNotes] = useState("");
+
+  // Recurrence Form States
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState("weekly");
+  const [recurrenceCount, setRecurrenceCount] = useState(4);
 
 
   const offlineSaleSequence = useRef(0);
@@ -402,7 +216,9 @@ export default function MarketEventsPage() {
   // Setup connection monitors and local queue retrieval
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Browser role/connectivity are external state and must be read after hydration.
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUserRole(localStorage.getItem("hh_user_role") || "staff");
       setIsOnline(navigator.onLine);
       
       const savedQueue = localStorage.getItem("hh_offline_market_sales");
@@ -488,20 +304,20 @@ export default function MarketEventsPage() {
     try {
       if (navigator.onLine) {
         const res = await api.getProducts();
-        setProducts((res || []).filter((p: any) => p.sku !== "SKU" && p.is_active !== false));
+        setProducts((res || []).filter((p: any) => p.sku !== "SKU" && p.is_active !== false && isCurrentLineupProduct(p)));
         localStorage.setItem("hh_cache_market_products", JSON.stringify(res));
       } else {
         const cached = localStorage.getItem("hh_cache_market_products");
         if (cached) {
           const parsed = JSON.parse(cached);
-          setProducts(parsed.filter((p: any) => p.sku !== "SKU" && p.is_active !== false));
+          setProducts(parsed.filter((p: any) => p.sku !== "SKU" && p.is_active !== false && isCurrentLineupProduct(p)));
         }
       }
     } catch (err) {
       console.error("Error fetching products:", err);
       const cached = localStorage.getItem("hh_cache_market_products");
       if (cached) {
-        setProducts(JSON.parse(cached).filter((p: any) => p.sku !== "SKU" && p.is_active !== false));
+        setProducts(JSON.parse(cached).filter((p: any) => p.sku !== "SKU" && p.is_active !== false && isCurrentLineupProduct(p)));
       }
     }
   };
@@ -604,6 +420,9 @@ export default function MarketEventsPage() {
     setActualClosingCash("");
     setCashAdjustments("");
     setCashAdjustmentsNotes("");
+    setIsRecurring(false);
+    setRecurrenceFrequency("weekly");
+    setRecurrenceCount(4);
     setIsCreateOpen(true);
   };
 
@@ -672,7 +491,7 @@ export default function MarketEventsPage() {
       return;
     }
     setActionLoading(true);
-    const validAllocations = allocations.filter(a => products.some(p => p.sku === a.sku));
+    const validAllocations = allocations.filter(a => a.quantity > 0 && products.some(p => p.sku === a.sku));
     try {
       await api.createMarketEvent({
         name,
@@ -685,7 +504,9 @@ export default function MarketEventsPage() {
         initial_cash_balance: initialCashBalance === "" ? 0.0 : Number(initialCashBalance),
         actual_closing_cash: actualClosingCash === "" ? null : Number(actualClosingCash),
         cash_adjustments: cashAdjustments === "" ? 0.0 : Number(cashAdjustments),
-        cash_adjustments_notes: cashAdjustmentsNotes
+        cash_adjustments_notes: cashAdjustmentsNotes,
+        recurrence: isRecurring ? recurrenceFrequency : "none",
+        recurrence_count: isRecurring ? Number(recurrenceCount) : 1
       });
       setIsCreateOpen(false);
       fetchEvents();
@@ -704,7 +525,7 @@ export default function MarketEventsPage() {
       return;
     }
     setActionLoading(true);
-    const validAllocations = allocations.filter(a => products.some(p => p.sku === a.sku));
+    const validAllocations = allocations.filter(a => a.quantity > 0 && products.some(p => p.sku === a.sku));
     try {
       const updatePayload: any = {
         name,
@@ -1144,7 +965,7 @@ export default function MarketEventsPage() {
       showToast("Market Event closeout successfully recorded and stock reconciled!", "success");
       fetchEvents();
     } catch (err: any) {
-      alert(`Error completing closeout: ${err.message}`);
+      alert(`Error completing closeout: ${getErrorMessage(err)}`);
     } finally {
       setActionLoading(false);
     }
@@ -1249,7 +1070,9 @@ export default function MarketEventsPage() {
                   {["All", ...BUSINESS_CATEGORIES].map(cat => (
                     <button
                       key={cat}
+                      type="button"
                       onClick={() => setPosCategory(cat)}
+                      aria-pressed={posCategory === cat}
                       className={`px-3 2xl:px-5 py-2 h-10 2xl:h-12 rounded-xl 2xl:rounded-2xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
                         posCategory === cat
                           ? "bg-slate-900 text-white border-slate-900 shadow-sm"
@@ -1267,6 +1090,7 @@ export default function MarketEventsPage() {
                 <button
                   type="button"
                   onClick={() => { setPosFavoritesOnly(!posFavoritesOnly); setPosBestSellersOnly(false); }}
+                  aria-pressed={posFavoritesOnly}
                   className={`px-3 2xl:px-4 py-2 text-xs font-bold rounded-xl transition-all border ${
                     posFavoritesOnly ? "bg-amber-500 text-white border-amber-500 shadow-3xs" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                   }`}
@@ -1276,6 +1100,7 @@ export default function MarketEventsPage() {
                 <button
                   type="button"
                   onClick={() => { setPosBestSellersOnly(!posBestSellersOnly); setPosFavoritesOnly(false); }}
+                  aria-pressed={posBestSellersOnly}
                   className={`px-3 2xl:px-4 py-2 text-xs font-bold rounded-xl transition-all border ${
                     posBestSellersOnly ? "bg-primary text-white border-primary shadow-3xs" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                   }`}
@@ -1294,8 +1119,11 @@ export default function MarketEventsPage() {
                 const remainingQty = Math.max(0, maxQty - cartQty);
 
                 return (
-                  <div 
+                  <button
+                    type="button"
                     key={p.sku}
+                    disabled={remainingQty === 0}
+                    aria-label={`Add ${p.product_name} to the running cart. ${formatProductQuantity(p, remainingQty)} remaining.`}
                     onClick={() => {
                       if (remainingQty > 0) {
                         handleAddToCart(p.sku, maxQty);
@@ -1303,9 +1131,9 @@ export default function MarketEventsPage() {
                         showToast(`Insufficient market allocation remaining for ${p.product_name}.`, "warning");
                       }
                     }}
-                    className={`border-2 rounded-3xl p-4 2xl:p-5 bg-white flex flex-col justify-between min-h-48 2xl:min-h-56 overflow-hidden shadow-3xs cursor-pointer select-none transition-all duration-150 ${
+                    className={`border-2 rounded-3xl p-4 2xl:p-5 bg-white flex flex-col justify-between min-h-48 2xl:min-h-56 overflow-hidden text-left shadow-3xs cursor-pointer select-none transition-all duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${
                       remainingQty === 0 
-                        ? "opacity-45 bg-slate-50 border-slate-200 pointer-events-none" 
+                        ? "opacity-45 bg-slate-50 border-slate-200"
                         : cartQty > 0 
                           ? "border-primary bg-primary-light/5 ring-4 ring-primary/5 scale-[1.02]" 
                           : "border-slate-150 hover:border-slate-350 hover:scale-[1.01]"
@@ -1318,24 +1146,26 @@ export default function MarketEventsPage() {
                         <span className="font-heading font-black text-[#885625]/40 text-sm tracking-widest uppercase">H+H JAR</span>
                       </div>
 
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="text-sm font-black text-slate-85 block leading-tight line-clamp-2 min-w-0">{p.product_name}</span>
-                        <span className={`text-[10px] font-bold font-mono py-0.5 px-2 rounded shrink-0 ml-1 ${getSizeBadgeStyle(p.size)}`}>{p.size}</span>
-                      </div>
+                      <ProductDisplay
+                        sku={p.sku}
+                        productName={p.product_name}
+                        category={p.category}
+                        size={p.size}
+                        variant="compact"
+                      />
                     </div>
 
                     <div className="flex justify-between items-end mt-4 pt-3 border-t border-slate-50 gap-2">
                       <div className="min-w-0 flex-1">
-                        <span className="text-xs text-slate-400 block font-extrabold font-mono uppercase tracking-wider truncate">SKU: {p.sku}</span>
                         <span className={`text-xs font-bold block mt-1 truncate ${remainingQty <= 5 ? "text-rose-600 font-extrabold animate-pulse" : "text-slate-550"}`}>
-                          Stock: <strong className="font-mono text-sm font-black">{remainingQty}</strong> left
+                          Stock: <strong className="font-mono text-sm font-black">{formatProductQuantity(p, remainingQty)}</strong> left
                         </span>
                       </div>
                       <span className="text-base 2xl:text-lg font-black font-mono text-slate-800 shrink-0">
-                        ₱{p.retail_price.toFixed(2)}
+                        {formatCurrency(p.retail_price)}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
 
@@ -1421,27 +1251,26 @@ export default function MarketEventsPage() {
                       if (!p) return null;
 
                       return (
-                        <div key={sku} className="flex justify-between items-center p-2.5 2xl:p-3.5 bg-white rounded-xl border border-slate-200 shadow-3xs text-sm">
-                          <div className="truncate pr-3">
-                            <span className="font-black text-slate-855 block truncate">{p.product_name}</span>
-                            <span className={`text-[10px] font-bold font-mono py-0.5 px-1.5 rounded ${getSizeBadgeStyle(p.size)}`}>{p.size}</span> <span className="text-slate-400">·</span> <span className="text-slate-455">₱{p.retail_price.toFixed(2)}</span>
+                        <div key={sku} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-3xs sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <ProductDisplay
+                              sku={p.sku}
+                              productName={p.product_name}
+                              category={p.category}
+                              size={p.size}
+                              variant="selector"
+                            />
+                            <span className="mt-1 block pl-9 font-mono text-xs font-bold text-slate-500">{formatCurrency(p.retail_price)}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => handleStepCartQty(sku, -1, maxQty)}
-                              className="w-8 h-8 border-2 border-slate-200 rounded-lg flex items-center justify-center hover:bg-slate-50 cursor-pointer bg-white"
-                            >
-                              <Minus size={11} className="stroke-[3]" />
-                            </button>
-                            <span className="w-8 text-center font-black text-slate-855 font-mono text-sm">{qty}</span>
-                            <button
-                              onClick={() => handleStepCartQty(sku, 1, maxQty)}
-                              className="w-8 h-8 border-2 border-slate-200 rounded-lg flex items-center justify-center hover:bg-slate-50 cursor-pointer bg-white"
-                            >
-                              <Plus size={11} className="stroke-[3]" />
-                            </button>
-                          </div>
+
+                          <NumericQuantityInput
+                            value={qty}
+                            min={0}
+                            max={maxQty}
+                            label={`${p.product_name} quantity`}
+                            onChange={(value) => handleStepCartQty(sku, value - qty, maxQty)}
+                            className="shrink-0"
+                          />
                         </div>
                       );
                     })
@@ -1509,7 +1338,7 @@ export default function MarketEventsPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-slate-455 font-extrabold uppercase tracking-wide">Total Amount:</span>
                     <span className="text-2xl 2xl:text-3xl font-black font-mono text-slate-900">
-                      ₱{cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {formatCurrency(cartTotal)}
                     </span>
                   </div>
                 </div>
@@ -1562,7 +1391,7 @@ export default function MarketEventsPage() {
                     {cashAmountNum >= cartTotal && (
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-sm font-black text-slate-700">
                         <span>Change Due:</span>
-                        <span className="text-lg font-mono text-emerald-600">₱{changeDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="text-lg font-mono text-emerald-600">{formatCurrency(changeDue)}</span>
                       </div>
                     )}
                   </div>
@@ -1577,7 +1406,7 @@ export default function MarketEventsPage() {
                   className="w-full text-sm 2xl:text-base font-extrabold uppercase h-12 2xl:h-16 rounded-2xl shadow-sm mt-2 2xl:mt-3"
                   leftIcon={<Check size={18} />}
                 >
-                  Complete Sale (₱{cartTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+                  Complete Sale ({formatCurrency(cartTotal)})
                 </Button>
 
               </div>
@@ -1633,7 +1462,7 @@ export default function MarketEventsPage() {
                                     }
                                   }
                                 }}
-                                className="px-1.5 py-0.5 rounded text-[9px] font-black text-emerald-800 bg-emerald-100/50 hover:bg-emerald-100 cursor-pointer border border-emerald-300"
+                                className="h-10 rounded-xl border border-emerald-300 bg-emerald-100/50 px-3 text-xs font-black text-emerald-800 hover:bg-emerald-100 cursor-pointer"
                               >
                                 Mark Paid
                               </button>
@@ -1653,22 +1482,22 @@ export default function MarketEventsPage() {
                                     }
                                   }
                                 }}
-                                className="px-1.5 py-0.5 rounded text-[9px] font-black text-blue-800 bg-blue-100/50 hover:bg-blue-100 cursor-pointer border border-blue-300"
+                                className="h-10 rounded-xl border border-blue-300 bg-blue-100/50 px-3 text-xs font-black text-blue-800 hover:bg-blue-100 cursor-pointer"
                               >
                                 Mark Picked Up
                               </button>
                             )}
                           </div>
                         )}
-                        <span className="text-slate-400 font-normal block mt-1">Logged: {new Date(sale.timestamp).toLocaleTimeString()}</span>
+                        <span className="text-slate-400 font-normal block mt-1">Logged: {formatDateTime(sale.timestamp)}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-slate-805 font-black text-sm">₱{sale.total_amount.toLocaleString()}</span>
+                        <span className="font-mono text-slate-805 font-black text-sm">{formatCurrency(sale.total_amount)}</span>
                         {i === 0 && (
                           <button
                             onClick={() => handleUndoSale(sale.id)}
-                            className="p-1.5 border border-rose-150 hover:bg-rose-50 text-rose-600 rounded-lg cursor-pointer transition-colors"
-                            title="Undo this specific sale transaction"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-150 text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
+                            aria-label={`Undo sale ${sale.id}`}
                           >
                             <Undo2 size={12} className="stroke-[3]" />
                           </button>
@@ -1699,7 +1528,7 @@ export default function MarketEventsPage() {
     <div className="space-y-8 flex flex-col pb-16">
       
       {/* 1. Header Banner */}
-      <div className="bg-[#fcf8f2] border border-[#ece5da] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+      <div className="bg-[#fcf8f2] border border-[#ece5da] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:justify-between md:items-center gap-6 print:hidden">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 text-primary rounded-2xl shrink-0">
             <Store size={32} />
@@ -1724,20 +1553,22 @@ export default function MarketEventsPage() {
             </button>
           )}
 
-          <Button
-            onClick={handleOpenCreate}
-            variant="primary"
-            size="lg"
-            className="h-12 font-bold"
-            leftIcon={<Plus size={16} />}
-          >
-            Create Event
-          </Button>
+          {userRole === "owner" && (
+            <Button
+              onClick={handleOpenCreate}
+              variant="primary"
+              size="lg"
+              className="h-12 font-bold"
+              leftIcon={<Plus size={16} />}
+            >
+              Create Event
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-slate-200 text-sm md:text-base font-heading font-black overflow-x-auto whitespace-nowrap bg-white/50 p-1.5 rounded-2xl border">
+      <div className="flex border-b border-slate-200 text-sm md:text-base font-heading font-black overflow-x-auto whitespace-nowrap bg-white/50 p-1.5 rounded-2xl border print:hidden">
         <button
           onClick={() => setActiveMainTab("scheduler")}
           className={`px-6 py-4 rounded-xl transition-all cursor-pointer font-extrabold shrink-0 text-center ${
@@ -1748,34 +1579,62 @@ export default function MarketEventsPage() {
         >
           📅 Events Scheduler &amp; POS Cashier
         </button>
-        <button
-          onClick={() => setActiveMainTab("analytics")}
-          className={`px-6 py-4 rounded-xl transition-all cursor-pointer font-extrabold shrink-0 text-center ${
-            activeMainTab === "analytics"
-              ? "bg-[#885625]/10 text-primary font-black animate-fade-in"
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
-        >
-          🧠 AI Recommendations &amp; Analytics Hub
-        </button>
-        <button
-          onClick={() => setActiveMainTab("reconciliation")}
-          className={`px-6 py-4 rounded-xl transition-all cursor-pointer font-extrabold shrink-0 text-center ${
-            activeMainTab === "reconciliation"
-              ? "bg-[#885625]/10 text-primary font-black animate-fade-in"
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
-        >
-          🛡️ Conflict Reconciliation Hub
-        </button>
+        {userRole === "owner" && (
+          <>
+            <button
+              onClick={() => setActiveMainTab("analytics")}
+              className={`px-6 py-4 rounded-xl transition-all cursor-pointer font-extrabold shrink-0 text-center ${
+                activeMainTab === "analytics"
+                  ? "bg-[#885625]/10 text-primary font-black animate-fade-in"
+                  : "text-slate-500 hover:bg-slate-100"
+              }`}
+            >
+              🧠 AI Recommendations &amp; Analytics Hub
+            </button>
+            <button
+              onClick={() => setActiveMainTab("reconciliation")}
+              className={`px-6 py-4 rounded-xl transition-all cursor-pointer font-extrabold shrink-0 text-center ${
+                activeMainTab === "reconciliation"
+                  ? "bg-[#885625]/10 text-primary font-black animate-fade-in"
+                  : "text-slate-500 hover:bg-slate-100"
+              }`}
+            >
+              🛡️ Conflict Reconciliation Hub
+            </button>
+          </>
+        )}
       </div>
 
       {/* 2. SCHEDULER TAB CONTENT */}
       {activeMainTab === "scheduler" && (
-        <>
+        <div className="space-y-6 print:hidden">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <span className="text-sm font-black text-slate-500 uppercase tracking-wider block">Scheduled Pop-Up Markets listing</span>
             {getSyncBadgeInScheduler()}
+          </div>
+
+          {/* Sub-tab selection menu */}
+          <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200 w-fit">
+            <button
+              onClick={() => setSchedulerFilter("active")}
+              className={`px-5 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                schedulerFilter === "active"
+                  ? "bg-white text-slate-850 shadow-3xs scale-[1.01] font-black border border-slate-200/50"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              📅 Active &amp; Planned ({events.filter(e => e.status === "Draft" || e.status === "Active").length})
+            </button>
+            <button
+              onClick={() => setSchedulerFilter("completed")}
+              className={`px-5 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider transition-all cursor-pointer ${
+                schedulerFilter === "completed"
+                  ? "bg-white text-slate-850 shadow-3xs scale-[1.01] font-black border border-slate-200/50"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              ✅ Completed / Past ({events.filter(e => e.status === "Completed" || e.status === "Cancelled").length})
+            </button>
           </div>
 
           {loading ? (
@@ -1783,13 +1642,26 @@ export default function MarketEventsPage() {
               <RefreshCw className="animate-spin text-primary" size={40} />
               <span className="text-sm font-semibold">Loading Market Events...</span>
             </div>
-          ) : events.length === 0 ? (
-            <Card className="rounded-3xl border-slate-200 shadow-sm p-12 text-center text-slate-500 font-semibold italic">
-              No external market events scheduled yet. Click the &quot;Create Market Event&quot; button above to register one.
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {events.map((event) => {
+          ) : (() => {
+            const filteredEvents = events.filter(e => {
+              if (schedulerFilter === "active") {
+                return e.status === "Draft" || e.status === "Active";
+              } else {
+                return e.status === "Completed" || e.status === "Cancelled";
+              }
+            });
+
+            if (filteredEvents.length === 0) {
+              return (
+                <Card className="rounded-3xl border-slate-200 shadow-sm p-12 text-center text-slate-500 font-semibold italic bg-white">
+                  No {schedulerFilter === "active" ? "active or planned" : "completed or cancelled"} market events scheduled yet.
+                </Card>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {filteredEvents.map((event) => {
 
                 return (
                   <div 
@@ -1810,7 +1682,7 @@ export default function MarketEventsPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-600 font-bold border-y border-slate-100 py-4">
                         <span className="flex items-center gap-2">
                           <Calendar size={16} className="text-[#885625] shrink-0" />
-                          <span>{event.event_date}</span>
+                          <span>{formatDate(event.event_date)}</span>
                         </span>
                         <span className="flex items-center gap-2">
                           <MapPin size={16} className="text-[#885625] shrink-0" />
@@ -1836,10 +1708,16 @@ export default function MarketEventsPage() {
                           </span>
                           <div className="flex flex-wrap gap-2">
                             {event.allocations.map((a: any) => (
-                              <div key={a.id} className="px-3 py-1 bg-[#885625]/5 border border-[#885625]/20 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                              <div key={a.id} className="flex min-w-0 items-center gap-2 rounded-xl border border-[#885625]/20 bg-[#885625]/5 px-3 py-2 text-xs font-bold text-slate-700">
                                 <span className="text-primary font-black">{a.quantity}x</span>
-                                <span>{a.product_name}</span>
-                                <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded font-black ${getSizeBadgeStyle(a.size)}`}>{a.size}</span>
+                                <ProductDisplay
+                                  sku={a.sku}
+                                  productName={a.product_name}
+                                  category={a.category || ""}
+                                  size={a.size}
+                                  variant="selector"
+                                  showIcon={false}
+                                />
                               </div>
                             ))}
                           </div>
@@ -1852,7 +1730,7 @@ export default function MarketEventsPage() {
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                             {event.metrics_basis === "actual" ? "Sales Revenue" : "Est Revenue"}
                           </span>
-                          <span className="font-mono font-black text-slate-800 text-sm mt-0.5 block">₱{event.estimated_revenue.toLocaleString()}</span>
+                          <span className="font-mono font-black text-slate-800 text-sm mt-0.5 block">{formatCurrency(event.estimated_revenue)}</span>
                         </div>
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
@@ -1862,7 +1740,7 @@ export default function MarketEventsPage() {
                             {event.financials_visible === false
                               ? "Owner only"
                               : event.costing_complete !== false
-                                ? `₱${event.estimated_cost.toLocaleString()}`
+                                ? formatCurrency(event.estimated_cost ?? 0)
                                 : "Unavailable"}
                           </span>
                         </div>
@@ -1874,7 +1752,7 @@ export default function MarketEventsPage() {
                             {event.financials_visible === false
                               ? "Owner only"
                               : event.costing_complete !== false
-                                ? `₱${event.potential_profit.toLocaleString()}`
+                                ? formatCurrency(event.potential_profit ?? 0)
                                 : "Unavailable"}
                           </span>
                         </div>
@@ -1934,36 +1812,39 @@ export default function MarketEventsPage() {
                         </Button>
                       )}
 
-                      <div className="flex gap-2 ml-auto">
-                        <Button
-                          onClick={() => handleOpenDelete(event)}
-                          variant="outline"
-                          aria-label={`Delete ${event.name}`}
-                          title="Delete market event"
-                          className="h-10 text-xs px-3 hover:bg-rose-50 border-rose-150 hover:text-danger hover:border-danger font-bold text-slate-600 rounded-xl"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                        <Button
-                          onClick={() => handleOpenEdit(event)}
-                          variant="outline"
-                          className="h-10 text-xs px-4 font-bold rounded-xl"
-                        >
-                          <Edit3 size={14} className="mr-1.5" /> Edit
-                        </Button>
-                      </div>
+                      {userRole === "owner" && (
+                        <div className="flex gap-2 ml-auto">
+                          <Button
+                            onClick={() => handleOpenDelete(event)}
+                            variant="outline"
+                            aria-label={`Delete ${event.name}`}
+                            title="Delete market event"
+                            className="h-10 text-xs px-3 hover:bg-rose-50 border-rose-150 hover:text-danger hover:border-danger font-bold text-slate-600 rounded-xl"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                          <Button
+                            onClick={() => handleOpenEdit(event)}
+                            variant="outline"
+                            className="h-10 text-xs px-4 font-bold rounded-xl"
+                          >
+                            <Edit3 size={14} className="mr-1.5" /> Edit
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
-          )}
-        </>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {activeMainTab === "analytics" && (
         /* 3. AI & ANALYTICS TAB CONTENT (PHASE 5) */
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in print:hidden">
           {analyticsLoading ? (
             <div className="py-20 text-center text-slate-550 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="animate-spin text-primary" size={40} />
@@ -1997,13 +1878,13 @@ export default function MarketEventsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="modern-card p-6 bg-white border-l-4 border-l-emerald-500">
                   <span className="text-xs text-slate-450 font-black uppercase tracking-wider block">Total POS Revenue</span>
-                  <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono mt-1">₱{analyticsData.overall.total_revenue.toLocaleString()}</h3>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono mt-1">{formatCurrency(analyticsData.overall.total_revenue ?? 0)}</h3>
                   <span className="text-[10px] text-slate-400 block mt-2">All completed pop-up sales</span>
                 </div>
                 <div className="modern-card p-6 bg-white border-l-4 border-l-primary">
                   <span className="text-xs text-slate-455 font-black uppercase tracking-wider block">Total Net Profit</span>
                   <h3 className="text-xl md:text-2xl font-black text-primary font-mono mt-1">
-                    {analyticsData.overall.costing_complete !== false ? `₱${analyticsData.overall.potential_profit.toLocaleString()}` : "Unavailable"}
+                    {analyticsData.overall.costing_complete !== false ? formatCurrency(analyticsData.overall.potential_profit ?? 0) : "Unavailable"}
                   </h3>
                   <span className="text-[10px] text-slate-400 block mt-2">
                     {analyticsData.overall.costing_complete !== false ? "After deducting BOM cost" : "Complete product costing"}
@@ -2016,7 +1897,7 @@ export default function MarketEventsPage() {
                 </div>
                 <div className="modern-card p-6 bg-white border-l-4 border-l-purple-500">
                   <span className="text-xs text-slate-455 font-black uppercase tracking-wider block">Avg Revenue / Event</span>
-                  <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono mt-1">₱{analyticsData.overall.avg_revenue_per_event.toLocaleString()}</h3>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-800 font-mono mt-1">{formatCurrency(analyticsData.overall.avg_revenue_per_event)}</h3>
                   <span className="text-[10px] text-slate-400 block mt-2">Event-to-event average payout</span>
                 </div>
               </div>
@@ -2033,12 +1914,14 @@ export default function MarketEventsPage() {
                   {analyticsData.recommendations.map((rec: any) => (
                     <div key={rec.sku} className={`p-6 bg-white border-2 rounded-3xl flex flex-col justify-between gap-4 shadow-3xs ${rec.is_stock_short ? "border-amber-300" : "border-slate-150 hover:border-slate-350"}`}>
                       <div className="space-y-3">
-                        <div className="flex justify-between items-start gap-3">
-                          <div>
-                            <h4 className="text-base font-black text-slate-800">{rec.product_name}</h4>
-                            <span className="mt-1 flex items-center gap-2 text-xs text-slate-400 font-mono">SKU: {rec.sku} <ProductSizeBadge size={rec.size} sku={rec.sku} /></span>
-                          </div>
-                          <Badge variant="warning" className="py-1 px-2.5 rounded-lg text-xs font-black">Bring {rec.recommended_quantity} jars</Badge>
+                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                          <ProductDisplay
+                            sku={rec.sku}
+                            productName={rec.product_name}
+                            category={rec.category || ""}
+                            size={rec.size}
+                          />
+                          <Badge variant="warning" className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-black">Bring {formatProductQuantity(rec, rec.recommended_quantity)}</Badge>
                         </div>
                         
                         {/* Dynamic WHY Reason paragraph */}
@@ -2050,7 +1933,7 @@ export default function MarketEventsPage() {
                           <div className="p-3 bg-amber-50 border border-amber-250 rounded-xl flex items-start gap-2 text-xs font-bold text-amber-800 leading-normal">
                             <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                             <span>
-                              <strong>Warehouse Stock Alert:</strong> You only have {rec.warehouse_stock} jars in the main warehouse. Fulfill this recommendation by scheduling a prep run of at least {rec.recommended_quantity - rec.warehouse_stock} jars under <strong>Production Planner</strong>!
+                              <strong>Warehouse Stock Alert:</strong> You only have {formatProductQuantity(rec, rec.warehouse_stock)} in the main warehouse. Fulfill this recommendation by scheduling a prep run of at least {formatProductQuantity(rec, rec.recommended_quantity - rec.warehouse_stock)} under <strong>Production Planner</strong>!
                             </span>
                           </div>
                         )}
@@ -2059,13 +1942,13 @@ export default function MarketEventsPage() {
                       <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs font-bold text-slate-550">
                         <div>
                           <span className="text-slate-400">Expected Revenue</span>
-                          <span className="block text-sm font-black text-slate-800 font-mono mt-0.5">₱{rec.expected_revenue.toLocaleString()}</span>
+                          <span className="block text-sm font-black text-slate-800 font-mono mt-0.5">{formatCurrency(rec.expected_revenue)}</span>
                         </div>
                         <div>
                           <span className="text-slate-400">Expected Net Profit</span>
                           <span className="block text-sm font-black text-emerald-600 font-mono mt-0.5">
                             {rec.costing_complete !== false && rec.expected_profit !== null
-                              ? `₱${rec.expected_profit.toLocaleString()}`
+                              ? formatCurrency(rec.expected_profit ?? 0)
                               : "Unavailable"}
                           </span>
                         </div>
@@ -2088,12 +1971,15 @@ export default function MarketEventsPage() {
                       <div key={item.sku} className="flex justify-between items-center p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold">
                         <div className="flex items-center gap-3">
                           <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-mono font-black text-xs">{idx + 1}</span>
-                          <div>
-                            <span className="text-slate-800 block text-sm font-black">{item.product_name}</span>
-                            <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5">{item.sku} <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${getSizeBadgeStyle(item.size)}`}>{item.size}</span></span>
-                          </div>
+                          <ProductDisplay
+                            sku={item.sku}
+                            productName={item.product_name}
+                            category={item.category || ""}
+                            size={item.size}
+                            variant="compact"
+                          />
                         </div>
-                        <span className="font-mono text-emerald-600 font-black text-base">{item.quantity} jars sold</span>
+                        <span className="shrink-0 font-mono text-base font-black text-emerald-600">{formatProductQuantity(item, item.quantity)} sold</span>
                       </div>
                     ))}
                   </CardContent>
@@ -2109,12 +1995,15 @@ export default function MarketEventsPage() {
                       <div key={item.sku} className="flex justify-between items-center p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold">
                         <div className="flex items-center gap-3">
                           <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center font-mono font-black text-xs">{idx + 1}</span>
-                          <div>
-                            <span className="text-slate-800 block text-sm font-black">{item.product_name}</span>
-                            <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5">{item.sku} <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${getSizeBadgeStyle(item.size)}`}>{item.size}</span></span>
-                          </div>
+                          <ProductDisplay
+                            sku={item.sku}
+                            productName={item.product_name}
+                            category={item.category || ""}
+                            size={item.size}
+                            variant="compact"
+                          />
                         </div>
-                        <span className="font-mono text-rose-600 font-black text-base">{item.quantity} jars sold</span>
+                        <span className="shrink-0 font-mono text-base font-black text-rose-600">{formatProductQuantity(item, item.quantity)} sold</span>
                       </div>
                     ))}
                   </CardContent>
@@ -2144,7 +2033,7 @@ export default function MarketEventsPage() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="hour" stroke="#94a3b8" fontSize={11} tickLine={false} />
                             <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                            <Tooltip formatter={(val) => [`₱${Number(val).toLocaleString()}`, "Sales"]} />
+                            <Tooltip formatter={(val) => [formatCurrency(Number(val)), "Sales"]} />
                             <Bar dataKey="sales" fill="#7b3e19" radius={[4, 4, 0, 0]} maxBarSize={30} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -2184,7 +2073,7 @@ export default function MarketEventsPage() {
                         </ResponsiveContainer>
                         <div className="absolute text-center">
                           <span className="text-[10px] text-slate-400 uppercase font-black block">Markets</span>
-                          <span className="text-sm font-black text-slate-800 font-mono">₱{analyticsData.overall.total_revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          <span className="text-sm font-black text-slate-800 font-mono">{formatCurrency(analyticsData.overall.total_revenue)}</span>
                         </div>
                       </div>
                     ) : (
@@ -2194,11 +2083,11 @@ export default function MarketEventsPage() {
                     <div className="w-full space-y-2 text-xs font-bold text-slate-500 border-t border-slate-100 pt-4 mt-4">
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1.5 font-bold"><span className="w-2.5 h-2.5 rounded-full bg-[#7b3e19]"></span> Weekend Sales (Sat-Sun)</span>
-                        <span className="font-mono text-slate-800 text-sm">₱{analyticsData.weekend_sales.toLocaleString()}</span>
+                        <span className="font-mono text-slate-800 text-sm">{formatCurrency(analyticsData.weekend_sales)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1.5 font-bold"><span className="w-2.5 h-2.5 rounded-full bg-[#cfaf45]"></span> Weekday Sales (Mon-Fri)</span>
-                        <span className="font-mono text-slate-800 text-sm">₱{analyticsData.weekday_sales.toLocaleString()}</span>
+                        <span className="font-mono text-slate-800 text-sm">{formatCurrency(analyticsData.weekday_sales)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -2225,7 +2114,7 @@ export default function MarketEventsPage() {
                           <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
                           <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} />
                           <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
-                          <Tooltip formatter={(val) => [`₱${Number(val).toLocaleString()}`]} />
+                          <Tooltip formatter={(val) => [formatCurrency(Number(val))]} />
                           <Line type="monotone" dataKey="revenue" name="Event Revenue" stroke="#7b3e19" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                           <Line type="monotone" dataKey="accumulated" name="Cumulative Revenue" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                         </LineChart>
@@ -2244,7 +2133,7 @@ export default function MarketEventsPage() {
       )}
 
       {activeMainTab === "reconciliation" && (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in print:hidden">
           <Card className="border-l-8 border-l-amber-500 bg-amber-50/10 shadow-sm rounded-3xl overflow-hidden">
             <CardHeader className="p-6 md:p-8 border-b border-amber-100 bg-white/40">
               <div className="flex items-center gap-4">
@@ -2305,6 +2194,8 @@ export default function MarketEventsPage() {
                   conflictsList.push({
                     sku: alloc.sku,
                     product_name: alloc.product_name,
+                    category: alloc.category,
+                    size: alloc.size,
                     dispatched: initialQty,
                     sold: soldQty,
                     remaining: alloc.quantity,
@@ -2331,11 +2222,16 @@ export default function MarketEventsPage() {
                         {conflictsList.map(conf => (
                           <div key={conf.sku} className="bg-rose-50/50 border border-rose-200 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-scale-up">
                             <div className="space-y-2">
-                              <span className="bg-rose-100 text-rose-800 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded">🔴 Sync Overlap Flagged</span>
-                              <h4 className="text-base font-black text-slate-800">{conf.product_name}</h4>
-                              <p className="text-xs text-slate-500 font-semibold">SKU: <span className="font-mono font-bold">{conf.sku}</span></p>
+                              <StatusBadge status="conflict" label="Sync overlap flagged" />
+                              <ProductDisplay
+                                sku={conf.sku}
+                                productName={conf.product_name}
+                                category={conf.category || ""}
+                                size={conf.size}
+                                variant="compact"
+                              />
                               <p className="text-xs text-rose-700 font-bold leading-relaxed mt-1">
-                                ⚠️ Multiple terminal synchronization overlap: Total synced sales ({conf.sold} units) exceeds the original dispatched allocation ({conf.dispatched} units) by <strong className="font-black text-sm font-mono">{conf.excess} units</strong>.
+                                Multiple terminal synchronization overlap: Total synced sales ({formatProductQuantity(conf, conf.sold)}) exceeds the original dispatched allocation ({formatProductQuantity(conf, conf.dispatched)}) by <strong className="font-black text-sm font-mono">{formatProductQuantity(conf, conf.excess)}</strong>.
                               </p>
                             </div>
                             <div className="flex md:flex-col items-end gap-2 text-right">
@@ -2359,15 +2255,15 @@ export default function MarketEventsPage() {
                         No transactions have been recorded or synced for this event yet.
                       </Card>
                     ) : (
-                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs overflow-x-auto">
+                      <div role="region" aria-label="Synced market transactions" tabIndex={0} className="scroll-fade-x rounded-2xl border border-slate-200 bg-white shadow-3xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
                         <table className="w-full text-left border-collapse text-sm">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-slate-550 font-black uppercase tracking-wider text-xs px-4 py-3">
-                              <th className="px-5 py-3">Sale ID &amp; Cashier</th>
-                              <th className="px-5 py-3">Timestamp</th>
-                              <th className="px-5 py-3">Items Sold</th>
-                              <th className="px-5 py-3 text-right">Total Amount</th>
-                              <th className="px-5 py-3 text-center">Actions</th>
+                              <th scope="col" className="px-5 py-3">Sale ID &amp; Cashier</th>
+                              <th scope="col" className="px-5 py-3">Timestamp</th>
+                              <th scope="col" className="px-5 py-3">Items Sold</th>
+                              <th scope="col" className="px-5 py-3 text-right">Total Amount</th>
+                              <th scope="col" className="px-5 py-3 text-center">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
@@ -2378,19 +2274,27 @@ export default function MarketEventsPage() {
                                   <span className="text-xs text-slate-400 font-mono font-semibold">Cashier: {sale.cashier_username}</span>
                                 </td>
                                 <td className="px-5 py-3.5 font-mono text-xs text-slate-550">
-                                  {new Date(sale.timestamp).toLocaleString()}
+                                  {formatDateTime(sale.timestamp)}
                                 </td>
                                 <td className="px-5 py-3.5">
                                   <div className="space-y-1">
                                     {sale.items.map((it: any) => (
-                                      <span key={it.id} className="block text-xs text-slate-705">
-                                        &bull; {it.product_name} x<strong className="text-[#885625]">{it.quantity}</strong> <ProductSizeBadge size={it.size} sku={it.sku} />
-                                      </span>
+                                      <div key={it.id} className="flex min-w-64 items-center justify-between gap-3">
+                                        <ProductDisplay
+                                          sku={it.sku}
+                                          productName={it.product_name}
+                                          category={it.category || ""}
+                                          size={it.size}
+                                          variant="selector"
+                                          showIcon={false}
+                                        />
+                                        <strong className="shrink-0 font-mono text-[#885625]">×{it.quantity}</strong>
+                                      </div>
                                     ))}
                                   </div>
                                 </td>
                                 <td className="px-5 py-3.5 text-right font-mono text-slate-855 text-base font-black">
-                                  ₱{sale.total_amount.toLocaleString()}
+                                  {formatCurrency(sale.total_amount)}
                                 </td>
                                 <td className="px-5 py-3.5 text-center">
                                   <button
@@ -2406,7 +2310,7 @@ export default function MarketEventsPage() {
                                         }
                                       }
                                     }}
-                                    className="px-3 py-1.5 text-xs font-black text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                                    className="h-10 px-3 text-xs font-black text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl cursor-pointer transition-colors"
                                   >
                                     Revert Sale
                                   </button>
@@ -2506,6 +2410,52 @@ export default function MarketEventsPage() {
               />
             </div>
 
+            {/* Recurrence Configuration */}
+            <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
+              <div className="flex items-center gap-2">
+                <input
+                  id="event-is-recurring"
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="w-5 h-5 accent-[#885625] cursor-pointer rounded"
+                />
+                <label htmlFor="event-is-recurring" className="text-xs text-slate-700 font-black uppercase tracking-wider cursor-pointer select-none">
+                  Recurring Event Series (e.g. Weekly Market)
+                </label>
+              </div>
+
+              {isRecurring && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 animate-fade-in">
+                  <div>
+                    <label htmlFor="event-recurrence-frequency" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Frequency</label>
+                    <select
+                      id="event-recurrence-frequency"
+                      value={recurrenceFrequency}
+                      onChange={(e) => setRecurrenceFrequency(e.target.value)}
+                      className="w-full text-sm font-bold bg-white h-12 border-2 border-slate-200 rounded-xl px-3"
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="bi-weekly">Bi-weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="event-recurrence-count" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Number of Weeks / Occurrences</label>
+                    <input
+                      id="event-recurrence-count"
+                      type="number"
+                      min={2}
+                      max={12}
+                      value={recurrenceCount}
+                      onChange={(e) => setRecurrenceCount(e.target.value === "" ? 2 : Math.min(12, Math.max(2, Number(e.target.value))))}
+                      className="w-full text-base font-bold text-slate-800 h-12 border-2 border-slate-200 rounded-xl px-3 outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Cash Float & Register Configuration */}
             <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
               <span className="text-xs text-slate-500 font-black uppercase tracking-wider block">Cash Register &amp; Opening Float</span>
@@ -2540,18 +2490,18 @@ export default function MarketEventsPage() {
                   <div className="grid grid-cols-3 gap-4 p-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-555 shadow-3xs">
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase block">Est Revenue</span>
-                      <span className="font-mono font-black text-slate-800 text-sm mt-1 block">₱{stats.estimatedRevenue.toLocaleString()}</span>
+                      <span className="font-mono font-black text-slate-800 text-sm mt-1 block">{formatCurrency(stats.estimatedRevenue)}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase block">Est Cost (BOM)</span>
                       <span className="font-mono font-black text-slate-800 text-sm mt-1 block">
-                        {stats.financialsVisible ? `₱${stats.estimatedCost?.toLocaleString()}` : "Owner only"}
+                        {stats.financialsVisible ? formatCurrency(stats.estimatedCost) : "Owner only"}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase block">Potential Profit</span>
                       <span className="font-mono font-black text-emerald-600 text-sm mt-1 block">
-                        {stats.financialsVisible ? `₱${stats.potentialProfit?.toLocaleString()}` : "Owner only"}
+                        {stats.financialsVisible ? formatCurrency(stats.potentialProfit) : "Owner only"}
                       </span>
                     </div>
                   </div>
@@ -2737,18 +2687,18 @@ export default function MarketEventsPage() {
                   <div className="grid grid-cols-3 gap-4 p-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-555 shadow-3xs">
                     <div>
                       <span className="text-[10px] text-slate-455 uppercase block">Est Revenue</span>
-                      <span className="font-mono font-black text-slate-900 text-sm mt-1 block">₱{stats.estimatedRevenue.toLocaleString()}</span>
+                      <span className="font-mono font-black text-slate-900 text-sm mt-1 block">{formatCurrency(stats.estimatedRevenue)}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-455 uppercase block">Est Cost (BOM)</span>
                       <span className="font-mono font-black text-slate-900 text-sm mt-1 block">
-                        {stats.financialsVisible ? `₱${stats.estimatedCost?.toLocaleString()}` : "Owner only"}
+                        {stats.financialsVisible ? formatCurrency(stats.estimatedCost) : "Owner only"}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-455 uppercase block">Potential Profit</span>
                       <span className="font-mono font-black text-emerald-600 text-sm mt-1 block">
-                        {stats.financialsVisible ? `₱${stats.potentialProfit?.toLocaleString()}` : "Owner only"}
+                        {stats.financialsVisible ? formatCurrency(stats.potentialProfit) : "Owner only"}
                       </span>
                     </div>
                   </div>
@@ -2796,19 +2746,108 @@ export default function MarketEventsPage() {
           title="Market Event Closeout Report"
           size="3xl"
         >
-          <div className="space-y-6 text-sm font-semibold text-slate-600 leading-normal print:p-0 print:text-black">
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              html, body {
+                background: white !important;
+                color: black !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+              }
+              @page {
+                size: portrait;
+                margin: 0 !important; /* Hides native browser URL, date, and titles */
+              }
+              .print-container {
+                padding: 0.5cm 1.0cm !important;
+                background: white !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                display: block !important;
+              }
+              .print-container, .print-container span, .print-container p, .print-container th, .print-container td, .print-container div, .print-container p strong {
+                font-size: 10px !important;
+                line-height: 1.15 !important;
+              }
+              .print-container h2, .print-container .text-xl {
+                font-size: 14px !important;
+              }
+              .print-container h3, .print-container .text-lg {
+                font-size: 11px !important;
+              }
+              .print-container .space-y-6 {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                gap: 6px !important;
+              }
+              .print-container .space-y-3, .print-container .space-y-2 {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                gap: 4px !important;
+              }
+              /* Shrink all table cells and paddings */
+              .print-container th, .print-container td {
+                padding: 4px 6px !important;
+              }
+              /* Shrink profit report grid cards */
+              .print-container .p-5, .print-container .p-4, .print-container .p-3 {
+                padding: 6px 10px !important;
+              }
+              .print-container .rounded-2xl {
+                border-radius: 8px !important;
+              }
+              .print-container .rounded-xl {
+                border-radius: 6px !important;
+              }
+              /* Hide icons to save space */
+              .print-container svg {
+                display: none !important;
+              }
+              .print\\:hidden {
+                display: none !important;
+              }
+              /* Hide only the backdrop background color and blur overlays */
+              .fixed.inset-0.bg-black\\/25, .fixed.inset-0.bg-slate-500\\/30, .fixed.inset-0.backdrop-blur-xs {
+                background: transparent !important;
+                backdrop-filter: none !important;
+              }
+              /* Ensure modal portal wrapper is fully visible and unconstrained */
+              div[role="dialog"] {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+              }
+              /* Hide any close/X buttons inside the modal dialog */
+              div[role="dialog"] button {
+                display: none !important;
+              }
+            }
+          ` }} />
+          <div className="space-y-6 text-sm font-semibold text-slate-600 leading-normal print:p-0 print:text-black print-container">
             
             {/* Header info sheet */}
             <div className="flex justify-between items-start border-b-2 border-slate-200 pb-5">
               <div>
                 <span className="font-heading font-black text-xl tracking-widest text-slate-900 block leading-none">H+H HUB</span>
                 <span className="text-[10px] text-slate-455 uppercase tracking-widest font-black block mt-2">MARKET EVENT CLOSEOUT SUMMARY</span>
-                <span className="text-xs text-slate-400 font-semibold block mt-1">Pasig City Kitchen Operations</span>
+                <span className="text-xs text-slate-400 font-semibold block mt-1">Cambria, Bay, Laguna, Brgy. Sto. Domingo</span>
               </div>
               <div className="text-right text-xs font-semibold text-slate-500 space-y-1">
                 <span className="font-heading font-black text-slate-800 text-sm uppercase tracking-widest block mb-2">OFFICIAL RECORD</span>
                 <p>Event ID: <span className="font-mono font-bold text-slate-850">#{selectedReportEvent.id}</span></p>
-                <p>Date: {selectedReportEvent.event_date}</p>
+                <p>Date: {formatDate(selectedReportEvent.event_date)}</p>
                 <p>Location: {selectedReportEvent.location}</p>
               </div>
             </div>
@@ -2832,7 +2871,7 @@ export default function MarketEventsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-bold text-slate-655">
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-black">Gross Revenue</span>
-                  <span className="text-base font-black text-slate-800 block font-mono mt-1">₱{selectedReportEvent.estimated_revenue.toLocaleString()}</span>
+                  <span className="text-base font-black text-slate-800 block font-mono mt-1">{formatCurrency(selectedReportEvent.estimated_revenue)}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-black">Total Cost (BOM)</span>
@@ -2840,7 +2879,7 @@ export default function MarketEventsPage() {
                     {selectedReportEvent.financials_visible === false
                       ? "Owner only"
                       : selectedReportEvent.costing_complete !== false
-                        ? `₱${selectedReportEvent.estimated_cost.toLocaleString()}`
+                        ? formatCurrency(selectedReportEvent.estimated_cost ?? 0)
                         : "Unavailable"}
                   </span>
                 </div>
@@ -2850,7 +2889,7 @@ export default function MarketEventsPage() {
                     {selectedReportEvent.financials_visible === false
                       ? "Owner only"
                       : selectedReportEvent.costing_complete !== false
-                        ? `₱${selectedReportEvent.potential_profit.toLocaleString()}`
+                        ? formatCurrency(selectedReportEvent.potential_profit ?? 0)
                         : "Unavailable"}
                   </span>
                 </div>
@@ -2872,15 +2911,15 @@ export default function MarketEventsPage() {
               <span className="text-xs text-slate-500 font-black uppercase tracking-wider block flex items-center gap-1.5">
                 <Package size={16} /> Remaining Stock &amp; Warehouse Return Sheet
               </span>
-              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs">
-                <table className="w-full text-left border-collapse text-sm">
+              <div role="region" aria-label="Market stock return report" tabIndex={0} className="scroll-fade-x rounded-2xl border border-slate-200 bg-white shadow-3xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+                <table className="min-w-[780px] w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs px-4 py-3">
-                      <th className="px-5 py-3">Product Description</th>
-                      <th className="px-5 py-3 text-right">Qty Dispatched</th>
-                      <th className="px-5 py-3 text-right">Units Sold</th>
-                      <th className="px-5 py-3 text-right">Returned Unsold</th>
-                      <th className="px-5 py-3 text-right">BOM Cost</th>
+                      <th scope="col" className="px-5 py-3">Product Description</th>
+                      <th scope="col" className="px-5 py-3 text-right">Qty Dispatched</th>
+                      <th scope="col" className="px-5 py-3 text-right">Units Sold</th>
+                      <th scope="col" className="px-5 py-3 text-right">Returned Unsold</th>
+                      <th scope="col" className="px-5 py-3 text-right">BOM Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
@@ -2896,16 +2935,21 @@ export default function MarketEventsPage() {
                       return (
                         <tr key={alloc.id} className="hover:bg-slate-50/20">
                           <td className="px-5 py-3.5">
-                            <span className="text-slate-855 font-black block text-sm">{alloc.product_name}</span>
-                            <span className="text-xs text-slate-400 font-mono font-semibold flex items-center gap-1.5 mt-0.5">{alloc.sku} <span className={`px-1 py-0.5 rounded text-[9px] font-black ${getSizeBadgeStyle(alloc.size)}`}>{alloc.size}</span></span>
+                            <ProductDisplay
+                              sku={alloc.sku}
+                              productName={alloc.product_name}
+                              category={alloc.category || ""}
+                              size={alloc.size}
+                              variant="compact"
+                            />
                           </td>
-                          <td className="px-5 py-3.5 text-right font-mono text-slate-600">{initialQty} units</td>
-                          <td className="px-5 py-3.5 text-right font-mono text-[#885625]">{soldQty} units</td>
-                          <td className="px-5 py-3.5 text-right font-mono text-emerald-600">{returnedQty} units</td>
+                          <td className="px-5 py-3.5 text-right font-mono text-slate-600">{formatProductQuantity(alloc, initialQty)}</td>
+                          <td className="px-5 py-3.5 text-right font-mono text-[#885625]">{formatProductQuantity(alloc, soldQty)}</td>
+                          <td className="px-5 py-3.5 text-right font-mono text-emerald-600">{formatProductQuantity(alloc, returnedQty)}</td>
                           <td className="px-5 py-3.5 text-right font-mono text-slate-855">
                             {selectedReportEvent.financials_visible === false
                               ? "Owner only"
-                              : `₱${(soldQty * alloc.cost_per_unit).toFixed(2)}`}
+                              : formatCurrency(soldQty * alloc.cost_per_unit)}
                           </td>
                         </tr>
                       );
@@ -2934,16 +2978,16 @@ export default function MarketEventsPage() {
                     <div className="space-y-2 text-xs font-bold">
                       <div className="flex justify-between py-1 border-b border-slate-100">
                         <span className="text-slate-455">1. Opening Cash Float:</span>
-                        <span className="font-mono text-slate-800">₱{initialFloat.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-slate-800">{formatCurrency(initialFloat)}</span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-slate-100">
                         <span className="text-slate-455">2. Cash Sales (Normal &amp; Paid Preorders):</span>
-                        <span className="font-mono text-[#885625]">₱{cashSalesTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-[#885625]">{formatCurrency(cashSalesTotal)}</span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-slate-100">
                         <span className="text-slate-455">3. Cash Adjustments / Refunds:</span>
                         <span className="font-mono text-slate-800">
-                          ₱{adjustments.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(adjustments)}
                           {selectedReportEvent.cash_adjustments_notes && (
                             <span className="text-[10px] text-slate-400 block font-sans">Notes: {selectedReportEvent.cash_adjustments_notes}</span>
                           )}
@@ -2951,7 +2995,7 @@ export default function MarketEventsPage() {
                       </div>
                       <div className="flex justify-between py-1.5 pt-2 border-t-2 border-slate-200 font-black text-sm">
                         <span className="text-slate-800">Expected Closing Cash:</span>
-                        <span className="font-mono text-slate-900">₱{expectedClosing.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-slate-900">{formatCurrency(expectedClosing)}</span>
                       </div>
                     </div>
                     
@@ -2961,7 +3005,7 @@ export default function MarketEventsPage() {
                         <>
                           <div className="text-center">
                             <span className="text-xs text-slate-400 block font-semibold">Physical Cash Counted</span>
-                            <span className="text-xl font-mono font-black text-slate-900">₱{actualClosing?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xl font-mono font-black text-slate-900">{formatCurrency(actualClosing)}</span>
                           </div>
                           <div className={`text-center py-1 px-3 rounded-lg border font-mono font-black text-xs ${
                             variance === 0 
@@ -2970,7 +3014,9 @@ export default function MarketEventsPage() {
                                 ? "bg-blue-50 text-blue-700 border-blue-200" 
                                 : "bg-rose-50 text-rose-700 border-rose-200"
                           }`}>
-                            {variance === 0 ? "Balanced (0.00 Variance)" : variance > 0 ? `+₱${variance.toLocaleString()} Cash Excess` : `₱${variance.toLocaleString()} Cash Deficit`}
+                            {variance === 0
+                              ? "Balanced (₱0.00 Variance)"
+                              : `${variance > 0 ? "+" : ""}${formatCurrency(variance)} ${variance > 0 ? "Cash Excess" : "Cash Deficit"}`}
                           </div>
                         </>
                       ) : (
@@ -3001,23 +3047,23 @@ export default function MarketEventsPage() {
                     </div>
                     <div className="bg-emerald-50/30 border border-emerald-100 p-3 rounded-xl text-center">
                       <span className="text-[9px] text-emerald-600 uppercase font-black block">Total Paid Value</span>
-                      <span className="text-sm font-black text-emerald-700 font-mono block mt-1">₱{stats.paidAmount.toLocaleString()}</span>
+                      <span className="text-sm font-black text-emerald-700 font-mono block mt-1">{formatCurrency(stats.paidAmount)}</span>
                     </div>
                     <div className="bg-rose-50/30 border border-rose-100 p-3 rounded-xl text-center">
                       <span className="text-[9px] text-rose-600 uppercase font-black block">Total Unpaid Value</span>
-                      <span className="text-sm font-black text-rose-700 font-mono block mt-1">₱{stats.unpaidAmount.toLocaleString()}</span>
+                      <span className="text-sm font-black text-rose-700 font-mono block mt-1">{formatCurrency(stats.unpaidAmount)}</span>
                     </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white max-h-40 overflow-y-auto">
-                    <table className="w-full text-left border-collapse text-xs">
+                  <div role="region" aria-label="Preorder fulfillment report" tabIndex={0} className="max-h-48 overflow-auto rounded-xl border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+                    <table className="min-w-[680px] w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase text-[10px] px-3 py-2">
-                          <th className="px-4 py-2">Customer / Order</th>
-                          <th className="px-4 py-2">Gateway</th>
-                          <th className="px-4 py-2">Value</th>
-                          <th className="px-4 py-2">Payment</th>
-                          <th className="px-4 py-2">Pickup</th>
+                          <th scope="col" className="px-4 py-3">Customer / Order</th>
+                          <th scope="col" className="px-4 py-3">Gateway</th>
+                          <th scope="col" className="px-4 py-3 text-right">Value</th>
+                          <th scope="col" className="px-4 py-3 text-center">Payment</th>
+                          <th scope="col" className="px-4 py-3 text-center">Pickup</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
@@ -3025,16 +3071,16 @@ export default function MarketEventsPage() {
                           <tr key={sale.id} className="hover:bg-slate-50/10">
                             <td className="px-4 py-2 text-slate-800 font-black">{sale.preorder_customer_name || "Guest Identifier"}</td>
                             <td className="px-4 py-2 font-mono text-[10px] text-slate-455">{sale.payment_method}</td>
-                            <td className="px-4 py-2 font-mono">₱{sale.total_amount.toLocaleString()}</td>
-                            <td className="px-4 py-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${sale.preorder_payment_status === "Paid" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                                {sale.preorder_payment_status || "Unpaid"}
-                              </span>
+                            <td className="px-4 py-3 text-right font-mono">{formatCurrency(sale.total_amount)}</td>
+                            <td className="px-4 py-3 text-center">
+                              <StatusBadge status={sale.preorder_payment_status || "Unpaid"} className="justify-center" />
                             </td>
-                            <td className="px-4 py-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${sale.preorder_fulfillment_status === "Picked Up" ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
-                                {sale.preorder_fulfillment_status || "Pending"}
-                              </span>
+                            <td className="px-4 py-3 text-center">
+                              <StatusBadge
+                                status={sale.preorder_fulfillment_status || "Pending"}
+                                label={sale.preorder_fulfillment_status || "Pending"}
+                                className="justify-center"
+                              />
                             </td>
                           </tr>
                         ))}
@@ -3054,7 +3100,7 @@ export default function MarketEventsPage() {
                 {Object.entries(calculatePaymentBreakdown()).map(([method, total]) => (
                   <div key={method} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center animate-scale-up">
                     <span className="text-slate-400 text-[10px] uppercase font-bold">{method}</span>
-                    <span className="text-sm font-black text-slate-805 block font-mono mt-1">₱{total.toLocaleString()}</span>
+                    <span className="text-sm font-black text-slate-805 block font-mono mt-1">{formatCurrency(total)}</span>
                   </div>
                 ))}
               </div>
@@ -3121,11 +3167,11 @@ export default function MarketEventsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-xs text-slate-455 font-bold uppercase block mb-1">Opening Float Balance:</span>
-                  <span className="text-sm font-black text-slate-805 font-mono">₱{(closeoutEvent.initial_cash_balance || 0).toLocaleString()}</span>
+                  <span className="text-sm font-black text-slate-805 font-mono">{formatCurrency(closeoutEvent.initial_cash_balance || 0)}</span>
                 </div>
                 <div>
                   <span className="text-xs text-slate-455 font-bold uppercase block mb-1">Cash Adjustments / Refunds:</span>
-                  <span className="text-sm font-black text-slate-805 font-mono">₱{(closeoutEvent.cash_adjustments || 0).toLocaleString()}</span>
+                  <span className="text-sm font-black text-slate-805 font-mono">{formatCurrency(closeoutEvent.cash_adjustments || 0)}</span>
                 </div>
                 <div>
                   <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Actual Physical Closing Cash *</label>
@@ -3167,42 +3213,51 @@ export default function MarketEventsPage() {
             <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
               <span className="text-xs text-slate-500 font-black uppercase tracking-wider block">Food Waste Tracker (Log damaged/spoiled items)</span>
               
-              <div className="border border-slate-200 rounded-xl bg-white max-h-56 overflow-y-auto">
-                <table className="w-full text-left border-collapse text-xs">
+              <div role="region" aria-label="Food waste closeout editor" tabIndex={0} className="max-h-64 overflow-auto rounded-xl border border-slate-200 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+                <table className="min-w-[720px] w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-[10px] px-3 py-2">
-                      <th className="px-4 py-2">Product Name</th>
-                      <th className="px-4 py-2 text-right">Booth Stock</th>
-                      <th className="px-4 py-2 text-center w-24">Qty Wasted</th>
-                      <th className="px-4 py-2 w-44">Waste Reason</th>
+                      <th scope="col" className="px-4 py-3">Product Name</th>
+                      <th scope="col" className="px-4 py-3 text-right">Booth Stock</th>
+                      <th scope="col" className="px-4 py-3 text-center w-40">Qty Wasted</th>
+                      <th scope="col" className="px-4 py-3 w-48">Waste Reason</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
                     {closeoutAllocations.map((alloc, idx) => (
                       <tr key={alloc.sku} className="hover:bg-slate-50/5">
-                        <td className="px-4 py-2">
-                          <span className="font-black text-slate-800 block text-xs">{alloc.product_name}</span>
-                          <span className="text-[9px] font-mono text-slate-400 mt-0.5 block">{alloc.sku} &bull; {alloc.size}</span>
+                        <td className="px-4 py-3">
+                          <ProductDisplay
+                            sku={alloc.sku}
+                            productName={alloc.product_name}
+                            category={alloc.category || ""}
+                            size={alloc.size}
+                            variant="selector"
+                          />
                         </td>
-                        <td className="px-4 py-2 text-right font-mono text-slate-600">{alloc.quantity} units</td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-3 text-right font-mono text-slate-600">{formatProductQuantity(alloc, alloc.quantity)}</td>
+                        <td className="px-4 py-3">
                           <input
                             type="number"
+                            inputMode="numeric"
+                            aria-label={`${alloc.product_name} quantity wasted`}
                             min={0}
                             max={alloc.quantity}
                             value={alloc.wasted_quantity}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => {
                               const val = Math.min(alloc.quantity, Math.max(0, parseInt(e.target.value) || 0));
                               const updated = [...closeoutAllocations];
                               updated[idx].wasted_quantity = val;
                               setCloseoutAllocations(updated);
                             }}
-                            className="w-full h-8 border-2 border-slate-200 rounded-lg text-center font-mono font-black"
+                            className="quantity-input h-10 w-full min-w-20 rounded-xl border-2 border-slate-200 px-2 text-center font-mono font-black"
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-3">
                           <input
                             type="text"
+                            aria-label={`${alloc.product_name} waste reason`}
                             placeholder="e.g., Unsold, Spilled, Expired"
                             value={alloc.waste_reason}
                             onChange={(e) => {
@@ -3210,7 +3265,7 @@ export default function MarketEventsPage() {
                               updated[idx].waste_reason = e.target.value;
                               setCloseoutAllocations(updated);
                             }}
-                            className="w-full h-8 border-2 border-slate-200 rounded-lg px-2 text-xs font-semibold"
+                            className="h-10 w-full min-w-44 rounded-xl border-2 border-slate-200 px-3 text-xs font-semibold"
                           />
                         </td>
                       </tr>

@@ -1,9 +1,29 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { api, clearFinancialCaches, type CostAnalysisOut } from "@/lib/api";
-import { getProductBusinessCategory, BUSINESS_CATEGORIES } from "@/lib/utils";
-import { ProductSizeBadge } from "@/components/ui/ProductSizeBadge";
+import {
+  api,
+  clearFinancialCaches,
+  type CategoryOverheadRateOut,
+  type CostAnalysisOut,
+  type GiftSetOut,
+  type ProductSKUOut,
+  type RawIngredientOut,
+  type RecipeCostDetailsOut,
+  type RecipeItemCreate,
+  type RecipeItemOut,
+  type RecipeOut,
+} from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  BUSINESS_CATEGORIES,
+  UNCATEGORIZED_BUSINESS_CATEGORY,
+  formatCurrency,
+  formatProductQuantity,
+  getProductBusinessCategory,
+  getProductSizeGroup,
+  isCurrentLineupProduct,
+} from "@/lib/utils";
 import { ProductDisplay } from "@/components/ui/ProductDisplay";
 import { 
   ChefHat, 
@@ -11,7 +31,6 @@ import {
   ChevronRight, 
   Layers,
   Plus,
-  Minus,
   Trash2,
   Save,
   AlertTriangle,
@@ -25,6 +44,33 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Modal, ConfirmationModal, PromptModal } from "@/components/ui/Modal";
+import {
+  DataTableScroll,
+  DataTableShell,
+  TableCell,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+} from "@/components/ui/DataTable";
+import { NumericQuantityInput } from "@/components/ui/NumericQuantityInput";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+
+const RECIPE_TABS = ["single", "bundles", "overhead"] as const;
+
+type EditableRecipeItem = {
+  id?: number;
+  client_id?: string;
+  ingredient_type: RecipeItemCreate["ingredient_type"];
+  raw_ingredient_id: number | "";
+  sub_sku: string;
+  base_qty: number;
+  base_unit: string;
+  raw_ingredient_name?: string | null;
+  sub_product_name?: string | null;
+};
+
+type ComparableRecipeItem = RecipeItemOut | EditableRecipeItem;
 
 export default function RecipesPage() {
   const [activeTab, setActiveTab] = useState<"single" | "bundles" | "overhead">("single");
@@ -32,11 +78,11 @@ export default function RecipesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [analysis, setAnalysis] = useState<CostAnalysisOut[]>([]);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [details, setDetails] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [products, setProducts] = useState<any[]>([]);
-  const [rawIngredients, setRawIngredients] = useState<any[]>([]);
+   
+  const [details, setDetails] = useState<RecipeCostDetailsOut | null>(null);
+   
+  const [products, setProducts] = useState<ProductSKUOut[]>([]);
+  const [rawIngredients, setRawIngredients] = useState<RawIngredientOut[]>([]);
 
   // Bulk Editor States
   const [isEditing, setIsEditing] = useState(false);
@@ -45,15 +91,15 @@ export default function RecipesPage() {
   const [editPortionSize, setEditPortionSize] = useState<number>(0);
   const [editPortionUnit, setEditPortionUnit] = useState<string>("g");
   const [editNotes, setEditNotes] = useState<string>("");
-  const [editIngredients, setEditIngredients] = useState<any[]>([]);
+  const [editIngredients, setEditIngredients] = useState<EditableRecipeItem[]>([]);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showSaveSummary, setShowSaveSummary] = useState(false);
   
   // Gift sets & Overhead state
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [giftSets, setGiftSets] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [overheadRates, setOverheadRates] = useState<any[]>([]);
+   
+  const [giftSets, setGiftSets] = useState<GiftSetOut[]>([]);
+   
+  const [overheadRates, setOverheadRates] = useState<CategoryOverheadRateOut[]>([]);
   
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -78,12 +124,22 @@ export default function RecipesPage() {
   const [editUtility, setEditUtility] = useState<{ [key: string]: string }>({});
 
   // Inline BOM modification/overrides states
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedRecipeItem, setSelectedRecipeItem] = useState<any>(null);
+   
+  const [selectedRecipeItem, setSelectedRecipeItem] = useState<RecipeItemOut | null>(null);
   const [isEditQtyOpen, setIsEditQtyOpen] = useState(false);
   const [isEditPriceOpen, setIsEditPriceOpen] = useState(false);
   const [selectedRawId, setSelectedRawId] = useState<number | null>(null);
   const [selectedRawName, setSelectedRawName] = useState("");
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, currentTab: typeof RECIPE_TABS[number]) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const currentIndex = RECIPE_TABS.indexOf(currentTab);
+    const offset = event.key === "ArrowRight" ? 1 : -1;
+    const nextTab = RECIPE_TABS[(currentIndex + offset + RECIPE_TABS.length) % RECIPE_TABS.length];
+    setActiveTab(nextTab);
+    document.getElementById(`recipe-tab-${nextTab}`)?.focus();
+  };
 
   const fetchData = async (isBackground = false) => {
     if (!isBackground) {
@@ -97,9 +153,9 @@ export default function RecipesPage() {
         api.getOverheadRates(),
         api.getRawIngredients()
       ]);
-      setAnalysis(res);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const filteredProds = prods.filter((p: any) => p.sku !== "SKU" && p.is_active !== false);
+      setAnalysis(res.filter((row) => row.sku !== "SKU" && isCurrentLineupProduct(row)));
+       
+      const filteredProds = prods.filter((product) => product.sku !== "SKU" && product.is_active !== false && isCurrentLineupProduct(product));
       setProducts(filteredProds);
       setRawIngredients(raws || []);
       setGiftSets(sets);
@@ -111,9 +167,9 @@ export default function RecipesPage() {
       localStorage.setItem("hh_cache_raw_ingredients", JSON.stringify(raws));
       localStorage.setItem("hh_cache_gift_sets", JSON.stringify(sets));
       localStorage.setItem("hh_cache_overhead_rates", JSON.stringify(rates));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      alert(err.message);
+       
+    } catch (err: unknown) {
+      alert(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -140,12 +196,16 @@ export default function RecipesPage() {
         const cachedOverheadRates = localStorage.getItem("hh_cache_overhead_rates");
         
         if (cachedAnalysis && cachedProducts && cachedRaws && cachedGiftSets && cachedOverheadRates) {
-          setAnalysis(JSON.parse(cachedAnalysis));
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setProducts(JSON.parse(cachedProducts).filter((p: any) => p.sku !== "SKU" && p.is_active !== false));
-          setRawIngredients(JSON.parse(cachedRaws));
-          setGiftSets(JSON.parse(cachedGiftSets));
-          setOverheadRates(JSON.parse(cachedOverheadRates));
+          setAnalysis(JSON.parse(cachedAnalysis).filter((row: CostAnalysisOut) => row.sku !== "SKU" && isCurrentLineupProduct(row)));
+           
+          setProducts(
+            (JSON.parse(cachedProducts) as ProductSKUOut[]).filter(
+              (product) => product.sku !== "SKU" && product.is_active !== false && isCurrentLineupProduct(product)
+            )
+          );
+          setRawIngredients(JSON.parse(cachedRaws) as RawIngredientOut[]);
+          setGiftSets(JSON.parse(cachedGiftSets) as GiftSetOut[]);
+          setOverheadRates(JSON.parse(cachedOverheadRates) as CategoryOverheadRateOut[]);
           setLoading(false); // Render instantly!
           
           fetchData(true);
@@ -188,8 +248,9 @@ export default function RecipesPage() {
     setEditPortionUnit(details.portion_unit || "g");
     setEditNotes(details.notes || "");
     
-    const cloned = (details.ingredients || []).map((ing: any) => ({
+    const cloned: EditableRecipeItem[] = (details.ingredients || []).map((ing) => ({
       id: ing.id,
+      client_id: `recipe-ingredient-${ing.id ?? crypto.randomUUID()}`,
       ingredient_type: ing.ingredient_type,
       raw_ingredient_id: ing.raw_ingredient_id || "",
       sub_sku: ing.sub_sku || "",
@@ -200,7 +261,39 @@ export default function RecipesPage() {
     setIsEditing(true);
   };
 
+  const getLiveCalculations = () => {
+    let totalBatchCost = 0.0;
+
+    editIngredients.forEach(item => {
+      let itemCost = 0.0;
+      if (item.ingredient_type === "raw") {
+        const rawIng = rawIngredients.find(r => r.id === Number(item.raw_ingredient_id));
+        if (rawIng) {
+          const costPerUnit = rawIng.cost_per_gram_unit ?? ((rawIng.price || 0.0) / (rawIng.net_weight || 1.0));
+          itemCost = (Number(item.base_qty) || 0.0) * costPerUnit;
+        }
+      } else if (item.ingredient_type === "sku") {
+        const subProd = products.find(p => p.sku === item.sub_sku);
+        if (subProd) {
+          const costPerUnit = subProd.cost_per_unit ?? 0.0;
+          itemCost = (Number(item.base_qty) || 0.0) * costPerUnit;
+        }
+      }
+      totalBatchCost += itemCost;
+    });
+
+    const yieldWeight = Number(editYieldWeight) || 1.0;
+    const portionSize = Number(editPortionSize) || 1.0;
+    const portionCost = yieldWeight > 0 ? (totalBatchCost / yieldWeight) * portionSize : 0.0;
+
+    return {
+      batchCost: totalBatchCost,
+      portionCost: portionCost
+    };
+  };
+
   const hasUnsavedChanges = () => {
+
     if (!details) return false;
     if (editYieldWeight !== (details.yield_weight || 0)) return true;
     if (editYieldUnit !== (details.yield_unit || "g")) return true;
@@ -225,9 +318,15 @@ export default function RecipesPage() {
   };
 
   const handleCloseBulkEditor = () => {
-    if (hasUnsavedChanges()) {
-      setShowConfirmClose(true);
+    if (isEditing) {
+      if (hasUnsavedChanges()) {
+        setShowConfirmClose(true);
+      } else {
+        setIsEditing(false);
+      }
     } else {
+      setSelectedSku(null);
+      setDetails(null);
       setIsEditing(false);
     }
   };
@@ -297,8 +396,8 @@ export default function RecipesPage() {
       summary.push("Recipe Notes updated.");
     }
 
-    const getIngKey = (ing: any) => ing.ingredient_type === "raw" ? `raw_${ing.raw_ingredient_id}` : `sku_${ing.sub_sku}`;
-    const getIngName = (ing: any) => {
+    const getIngKey = (ing: ComparableRecipeItem) => ing.ingredient_type === "raw" ? `raw_${ing.raw_ingredient_id}` : `sku_${ing.sub_sku}`;
+    const getIngName = (ing: ComparableRecipeItem) => {
       if (ing.ingredient_type === "raw") {
         return rawIngredients.find(r => r.id === Number(ing.raw_ingredient_id))?.name || ing.raw_ingredient_name || "Raw Material";
       } else {
@@ -307,8 +406,12 @@ export default function RecipesPage() {
     };
 
     const origIngredients = details.ingredients || [];
-    const origMap = new Map<string, any>(origIngredients.map((ing: any) => [getIngKey(ing), ing]));
-    const editMap = new Map<string, any>(editIngredients.map((ing: any) => [getIngKey(ing), ing]));
+    const origMap = new Map<string, RecipeItemOut>(
+      origIngredients.map((ing): [string, RecipeItemOut] => [getIngKey(ing), ing])
+    );
+    const editMap = new Map<string, EditableRecipeItem>(
+      editIngredients.map((ing): [string, EditableRecipeItem] => [getIngKey(ing), ing])
+    );
 
     editIngredients.forEach((ing) => {
       const key = getIngKey(ing);
@@ -316,13 +419,13 @@ export default function RecipesPage() {
         summary.push(`Added ingredient: ${getIngName(ing)} (${ing.base_qty} ${ing.base_unit})`);
       } else {
         const origItem = origMap.get(key);
-        if (origItem.base_qty !== ing.base_qty || origItem.base_unit !== ing.base_unit) {
+        if (origItem && (origItem.base_qty !== ing.base_qty || origItem.base_unit !== ing.base_unit)) {
           summary.push(`Modified ingredient: ${getIngName(ing)} (quantity changed from ${origItem.base_qty} ${origItem.base_unit} to ${ing.base_qty} ${ing.base_unit})`);
         }
       }
     });
 
-    origIngredients.forEach((ing: any) => {
+    origIngredients.forEach((ing) => {
       const key = getIngKey(ing);
       if (!editMap.has(key)) {
         summary.push(`Removed ingredient: ${getIngName(ing)}`);
@@ -332,18 +435,19 @@ export default function RecipesPage() {
     return summary;
   };
 
-  const detectCircularReference = (targetSku: string, editIngs: any[], allRecipes: any[]): string[] | null => {
+  const detectCircularReference = (targetSku: string, editIngs: RecipeItemCreate[], allRecipes: RecipeOut[]): string[] | null => {
     const adjList: Record<string, string[]> = {};
+
+    const getSubRecipeSkus = (ingredients: readonly RecipeItemCreate[]): string[] =>
+      ingredients.flatMap((ingredient) =>
+        ingredient.ingredient_type === "sku" && ingredient.sub_sku ? [ingredient.sub_sku] : []
+      );
     
-    allRecipes.forEach((recipe: any) => {
-      adjList[recipe.sku] = (recipe.ingredients || [])
-        .filter((ing: any) => ing.ingredient_type === "sku" && ing.sub_sku)
-        .map((ing: any) => ing.sub_sku);
+    allRecipes.forEach((recipe) => {
+      adjList[recipe.sku] = getSubRecipeSkus(recipe.ingredients || []);
     });
     
-    adjList[targetSku] = editIngs
-      .filter((ing: any) => ing.ingredient_type === "sku" && ing.sub_sku)
-      .map((ing: any) => ing.sub_sku);
+    adjList[targetSku] = getSubRecipeSkus(editIngs);
       
     const visited = new Set<string>();
     const recStack = new Set<string>();
@@ -380,7 +484,7 @@ export default function RecipesPage() {
     if (!selectedSku) return;
     setSavingRecipe(true);
     try {
-      const formattedIngredients = editIngredients.map(ing => ({
+      const formattedIngredients: RecipeItemCreate[] = editIngredients.map(ing => ({
         ingredient_type: ing.ingredient_type,
         raw_ingredient_id: ing.ingredient_type === "raw" ? (ing.raw_ingredient_id ? Number(ing.raw_ingredient_id) : null) : null,
         sub_sku: ing.ingredient_type === "sku" ? ing.sub_sku : null,
@@ -415,8 +519,8 @@ export default function RecipesPage() {
       await fetchData();
       setIsEditing(false);
       setShowSaveSummary(false);
-    } catch (err: any) {
-      alert(`Error saving recipe: ${err.message || err}`);
+    } catch (err: unknown) {
+      alert(`Error saving recipe: ${getErrorMessage(err)}`);
     } finally {
       setSavingRecipe(false);
     }
@@ -440,9 +544,9 @@ export default function RecipesPage() {
         await fetchDetails(selectedSku);
       }
       await fetchData();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      alert(`Error updating recipe quantity: ${err.message}`);
+       
+    } catch (err: unknown) {
+      alert(`Error updating recipe quantity: ${getErrorMessage(err)}`);
     } finally {
       setDetailsLoading(false);
     }
@@ -464,9 +568,9 @@ export default function RecipesPage() {
         await fetchDetails(selectedSku);
       }
       await fetchData();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      alert(`Error updating ingredient cost: ${err.message}`);
+       
+    } catch (err: unknown) {
+      alert(`Error updating ingredient cost: ${getErrorMessage(err)}`);
     } finally {
       setDetailsLoading(false);
     }
@@ -477,7 +581,7 @@ export default function RecipesPage() {
     try {
       await api.recalculateAllCosts();
       const res = await api.getCostAnalysis();
-      setAnalysis(res);
+      setAnalysis(res.filter((row) => row.sku !== "SKU" && isCurrentLineupProduct(row)));
       const sets = await api.getGiftSets();
       setGiftSets(sets);
       if (selectedSku) {
@@ -494,6 +598,7 @@ export default function RecipesPage() {
     setSavingId(cat);
     try {
       const rate = overheadRates.find(r => r.category === cat);
+      if (!rate) return;
       const labor = editLabor[cat] !== undefined ? parseFloat(editLabor[cat]) : rate.labor_cost_per_unit;
       const util = editUtility[cat] !== undefined ? parseFloat(editUtility[cat]) : rate.utility_cost_per_unit;
 
@@ -513,18 +618,18 @@ export default function RecipesPage() {
       setEditUtility(prev => {
         const copy = { ...prev }; delete copy[cat]; return copy;
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      alert(`Error updating rates: ${err.message}`);
+       
+    } catch (err: unknown) {
+      alert(`Error updating rates: ${getErrorMessage(err)}`);
     } finally {
       setSavingId(null);
     }
   };
 
-  const handleStepBundleQty = (sku: string, delta: number) => {
+  const handleBundleQtyChange = (sku: string, quantity: number) => {
     setBundleQuantities(prev => ({
       ...prev,
-      [sku]: Math.max(0, (prev[sku] || 0) + delta)
+      [sku]: Math.max(0, quantity)
     }));
   };
 
@@ -582,59 +687,33 @@ export default function RecipesPage() {
   };
 
   const filteredAnalysis = analysis
-    .filter(row => row.sku !== "SKU")
+    .filter(row => row.sku !== "SKU" && isCurrentLineupProduct(row))
     .filter(row => {
       if (selectedCategory === "All") return true;
       return getProductBusinessCategory(row) === selectedCategory;
     });
 
   // Group products by Business Category & Size Group
-  const groupedAnalysis: { [category: string]: { [size: string]: CostAnalysisOut[] } } = {
-    "Spreads & Sauces": {
-      "Sweet Spreads (Indulge / 240g)": [],
-      "Sweet Spreads (Sampler / 100g)": [],
-      "Savory Spreads (Indulge / 200g)": [],
-      "Savory Spreads (Sampler / 100g)": [],
-      "Other Sizes": []
-    },
-    "Sandwiches & Salads": {
-      "Full Size (Double Portion)": [],
-      "Solo Size (Single Portion)": [],
-      "Half Size (Snack Portion)": [],
-      "Other Sizes": []
-    }
-  };
+  const categoryOrder = [...BUSINESS_CATEGORIES, UNCATEGORIZED_BUSINESS_CATEGORY];
+  const groupedAnalysis: Record<string, Record<string, { label: string; order: number; items: CostAnalysisOut[] }>> = {};
+  categoryOrder.forEach((category) => {
+    groupedAnalysis[category] = {};
+  });
 
-  filteredAnalysis.forEach(row => {
-    const bizCat = getProductBusinessCategory(row);
-    const targetCat = bizCat === "Spreads & Sauces" ? "Spreads & Sauces" : "Sandwiches & Salads";
-    
-    const sizeLower = (row.size || "").toLowerCase().trim();
-    let sizeGroup = "Other Sizes";
-    if (targetCat === "Spreads & Sauces") {
-      const isSavory = row.sku.includes("SVR") || row.sku.startsWith("PP") || row.sku.startsWith("CGO") || row.sku.startsWith("CLS");
-      if (sizeLower.includes("sampler") || sizeLower.includes("sam") || sizeLower.includes("110")) {
-        sizeGroup = isSavory ? "Savory Spreads (Sampler / 100g)" : "Sweet Spreads (Sampler / 100g)";
-      } else if (sizeLower.includes("indulge") || sizeLower.includes("ind") || sizeLower.includes("240") || sizeLower.includes("220") || sizeLower.includes("250")) {
-        sizeGroup = isSavory ? "Savory Spreads (Indulge / 200g)" : "Sweet Spreads (Indulge / 240g)";
-      }
+  filteredAnalysis.forEach((row) => {
+    const businessCategory = getProductBusinessCategory(row);
+    const targetCategory = groupedAnalysis[businessCategory] ? businessCategory : UNCATEGORIZED_BUSINESS_CATEGORY;
+    const sizeGroup = getProductSizeGroup(row);
+    const existing = groupedAnalysis[targetCategory][sizeGroup.key];
+    if (existing) {
+      existing.items.push(row);
     } else {
-      if (sizeLower.includes("half") || sizeLower.includes("hf")) {
-        sizeGroup = "Half Size (Snack Portion)";
-      } else if (sizeLower.includes("full") || sizeLower.includes("fl")) {
-        sizeGroup = "Full Size (Double Portion)";
-      } else if (sizeLower.includes("solo") || sizeLower.includes("sl")) {
-        sizeGroup = "Solo Size (Single Portion)";
-      }
+      groupedAnalysis[targetCategory][sizeGroup.key] = {
+        label: sizeGroup.label,
+        order: sizeGroup.order,
+        items: [row],
+      };
     }
-
-    if (!groupedAnalysis[targetCat]) {
-      groupedAnalysis[targetCat] = { "Sweet Spreads (Indulge / 240g)": [], "Sweet Spreads (Sampler / 100g)": [], "Savory Spreads (Indulge / 200g)": [], "Savory Spreads (Sampler / 100g)": [], "Full Size (Double Portion)": [], "Solo Size (Single Portion)": [], "Half Size (Snack Portion)": [], "Other Sizes": [] };
-    }
-    if (!groupedAnalysis[targetCat][sizeGroup]) {
-      groupedAnalysis[targetCat][sizeGroup] = [];
-    }
-    groupedAnalysis[targetCat][sizeGroup].push(row);
   });
 
   if (loading) {
@@ -689,8 +768,14 @@ export default function RecipesPage() {
       {/* Tabs Menu */}
       <div className="scroll-fade-x flex gap-1 whitespace-nowrap bg-white/70 p-1.5 rounded-2xl border border-slate-200" role="tablist" aria-label="Recipe views">
         <button
+          id="recipe-tab-single"
+          type="button"
           onClick={() => setActiveTab("single")}
-          role="tab" aria-selected={activeTab === "single"}
+          onKeyDown={(event) => handleTabKeyDown(event, "single")}
+          role="tab"
+          aria-selected={activeTab === "single"}
+          aria-controls="recipe-panel-single"
+          tabIndex={activeTab === "single" ? 0 : -1}
           className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
             activeTab === "single"
               ? "bg-[#885625]/10 text-primary font-black"
@@ -700,8 +785,14 @@ export default function RecipesPage() {
           <BookOpen size={16} /> Costing ledger
         </button>
         <button
+          id="recipe-tab-bundles"
+          type="button"
           onClick={() => setActiveTab("bundles")}
-          role="tab" aria-selected={activeTab === "bundles"}
+          onKeyDown={(event) => handleTabKeyDown(event, "bundles")}
+          role="tab"
+          aria-selected={activeTab === "bundles"}
+          aria-controls="recipe-panel-bundles"
+          tabIndex={activeTab === "bundles" ? 0 : -1}
           className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
             activeTab === "bundles"
               ? "bg-[#885625]/10 text-primary font-black"
@@ -711,8 +802,14 @@ export default function RecipesPage() {
           <Gift size={16} /> Gift sets
         </button>
         <button
+          id="recipe-tab-overhead"
+          type="button"
           onClick={() => setActiveTab("overhead")}
-          role="tab" aria-selected={activeTab === "overhead"}
+          onKeyDown={(event) => handleTabKeyDown(event, "overhead")}
+          role="tab"
+          aria-selected={activeTab === "overhead"}
+          aria-controls="recipe-panel-overhead"
+          tabIndex={activeTab === "overhead" ? 0 : -1}
           className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
             activeTab === "overhead"
               ? "bg-[#885625]/10 text-primary font-black"
@@ -728,15 +825,17 @@ export default function RecipesPage() {
         
         {/* 1. SINGLE PRODUCTS COSTING */}
         {activeTab === "single" && (
-          <div className="space-y-6">
+          <div id="recipe-panel-single" role="tabpanel" aria-labelledby="recipe-tab-single" className="space-y-6">
             
             {/* Category Pills */}
             <div className="flex flex-wrap gap-2 pb-2">
-              {["All", ...BUSINESS_CATEGORIES].map(cat => (
+              {["All", ...BUSINESS_CATEGORIES, UNCATEGORIZED_BUSINESS_CATEGORY].map(cat => (
                 <button
                   key={cat}
+                  type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
+                  aria-pressed={selectedCategory === cat}
+                  className={`min-h-10 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
                     selectedCategory === cat
                       ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -747,77 +846,60 @@ export default function RecipesPage() {
               ))}
             </div>
 
-            <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-              <CardContent className="p-0 bg-white">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-slate-200 text-sm text-slate-700">
+            <DataTableShell className="rounded-3xl">
+                <DataTableScroll label="Product costing ledger" className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] border-collapse text-left text-sm text-slate-700">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                        <th className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Product Name &amp; SKU</th>
+                      <TableHeaderRow>
+                        <TableHeaderCell className="border-r border-slate-200">Product Name &amp; SKU</TableHeaderCell>
                         {userRole === "owner" && (
                           <>
-                            <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Retail SRP</th>
-                            <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Food Cost</th>
-                            <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Labor + Util</th>
-                            <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Net Profit</th>
-                            <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">Margin %</th>
+                            <TableHeaderCell align="right" className="border-r border-slate-200">Retail SRP</TableHeaderCell>
+                            <TableHeaderCell align="right" className="border-r border-slate-200">Food Cost</TableHeaderCell>
+                            <TableHeaderCell align="right" className="border-r border-slate-200">Labor + Util</TableHeaderCell>
+                            <TableHeaderCell align="right" className="border-r border-slate-200">Net Profit</TableHeaderCell>
+                            <TableHeaderCell align="right" className="border-r border-slate-200">Margin %</TableHeaderCell>
                           </>
                         )}
-                        <th className="px-3 py-3 text-right 2xl:px-6 2xl:py-4.5">BOM Details</th>
-                      </tr>
+                        <TableHeaderCell align="right">BOM Details</TableHeaderCell>
+                      </TableHeaderRow>
                     </thead>
-                    <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
+                    <tbody className="font-semibold text-slate-700">
                       {filteredAnalysis.length === 0 && (
-                        <tr>
-                          <td colSpan={userRole === "owner" ? 7 : 2} className="px-6 py-16 text-center">
-                            <ChefHat size={28} className="mx-auto mb-3 text-slate-300" />
-                            <p className="text-sm font-bold text-slate-700">No products in this view</p>
-                            <p className="mt-1 text-xs font-medium text-slate-400">Choose another category or recalculate costs to refresh the ledger.</p>
-                          </td>
-                        </tr>
+                        <TableEmptyState
+                          colSpan={userRole === "owner" ? 7 : 2}
+                          title="No products in this view"
+                          description="Choose another category or recalculate costs to refresh the ledger."
+                        />
                       )}
                       {Object.entries(groupedAnalysis).map(([categoryName, sizeGroups]) => {
-                        const hasItems = Object.values(sizeGroups).some(list => list.length > 0);
+                        const hasItems = Object.values(sizeGroups).some((group) => group.items.length > 0);
                         if (!hasItems) return null;
 
                         return (
                           <React.Fragment key={categoryName}>
                             {/* Category Header Row */}
-                            <tr className="bg-[#885625]/5 select-none border-t-2 border-slate-200">
-                              <td colSpan={userRole === "owner" ? 7 : 2} className="px-4 py-3 2xl:px-6 2xl:py-4">
-                                <span className="text-sm font-heading font-black text-[#885625] uppercase tracking-wider flex items-center gap-1.5">
+                            <tr className="select-none border-t-2 border-slate-200 bg-[#885625]/5">
+                              <th scope="rowgroup" colSpan={userRole === "owner" ? 7 : 2} className="px-4 py-3 text-left sm:px-5">
+                                <span className="flex items-center gap-1.5 font-heading text-sm font-black uppercase tracking-wider text-[#885625]">
                                   <Layers size={15} /> {categoryName}
                                 </span>
-                              </td>
+                              </th>
                             </tr>
 
-                            {Object.entries(sizeGroups).map(([sizeGroupName, items]) => {
-                              if (items.length === 0) return null;
-
+                            {Object.values(sizeGroups).sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)).map((sizeGroup) => {
                               return (
-                                <React.Fragment key={sizeGroupName}>
+                                <React.Fragment key={sizeGroup.label}>
                                   {/* Size Group Header Row */}
-                                  <tr className="bg-slate-50/50 select-none border-t border-b border-slate-100">
-                                    <td colSpan={userRole === "owner" ? 7 : 2} className="px-4 py-2.5 2xl:px-8 2xl:py-3">
-                                      <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
-                                        {sizeGroupName}
-                                      </span>
-                                    </td>
+                                  <tr className="select-none border-y border-slate-100 bg-slate-50/70">
+                                    <th scope="rowgroup" colSpan={userRole === "owner" ? 7 : 2} className="px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 sm:px-5">
+                                      {sizeGroup.label}
+                                    </th>
                                   </tr>
 
-                                  {items.map((row) => (
-                                    <tr 
-                                      key={row.sku} 
-                                      onClick={() => fetchDetails(row.sku)}
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter" || event.key === " ") fetchDetails(row.sku);
-                                      }}
-                                      tabIndex={0}
-                                      role="button"
-                                      aria-label={`Open bill of materials for ${row.product_name}`}
-                                      className="hover:bg-[#885625]/5 focus-visible:bg-[#885625]/5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
-                                    >
-                                      <td className="px-4 py-3 border-r border-slate-200 2xl:px-8 2xl:py-4">
+                                  {sizeGroup.items.map((row) => (
+                                    <TableRow key={row.sku}>
+                                      <TableCell className="border-r border-slate-200">
                                         <ProductDisplay
                                           sku={row.sku}
                                           productName={row.product_name}
@@ -825,27 +907,25 @@ export default function RecipesPage() {
                                           size={row.size}
                                           isActive={true}
                                         />
-                                      </td>
+                                      </TableCell>
                                       {userRole === "owner" && (
                                         <>
-                                          <td className="px-3 py-3 border-r border-slate-200 text-right font-mono font-black text-slate-900 text-sm 2xl:px-6 2xl:py-4 2xl:text-base">₱{row.selling_price.toFixed(2)}</td>
-                                          <td className="px-3 py-3 border-r border-slate-200 text-right text-slate-900 font-black font-mono text-sm 2xl:px-6 2xl:py-4 2xl:text-base">
+                                          <TableCell align="right" className="border-r border-slate-200 font-mono font-black tabular-nums text-slate-900">{formatCurrency(row.selling_price)}</TableCell>
+                                          <TableCell align="right" className="border-r border-slate-200 font-mono font-black tabular-nums text-slate-900">
                                             {!row.cost_status || row.cost_status === "ok" ? (
-                                              <div>₱{row.food_cost.toFixed(2)}</div>
+                                              <div>{formatCurrency(row.food_cost)}</div>
                                             ) : (
-                                              <Badge variant="danger" className="text-[10px] py-1 px-2 rounded font-bold">
-                                                {row.cost_status_message || "Review costing data"}
-                                              </Badge>
+                                              <StatusBadge status="failed" label={row.cost_status_message || "Review costing data"} className="text-[10px]" />
                                             )}
                                             {(!row.cost_status || row.cost_status === "ok") && row.cost_override !== null && row.cost_override > 0 && (
                                               <Badge variant="warning" className="text-[10px] py-0.5 px-1.5 mt-1 rounded font-bold">Override Rule Active</Badge>
                                             )}
-                                          </td>
-                                          <td className="px-3 py-3 border-r border-slate-200 text-right text-slate-455 font-mono 2xl:px-6 2xl:py-4">₱{(row.labor_cost + row.utility_cost).toFixed(2)}</td>
-                                          <td className="px-3 py-3 border-r border-slate-200 text-right text-emerald-600 font-mono font-black text-sm 2xl:px-6 2xl:py-4 2xl:text-base">
-                                            {!row.cost_status || row.cost_status === "ok" ? `₱${row.net_profit.toFixed(2)}` : "Unavailable"}
-                                          </td>
-                                          <td className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4">
+                                          </TableCell>
+                                          <TableCell align="right" className="border-r border-slate-200 font-mono tabular-nums text-slate-455">{formatCurrency(row.labor_cost + row.utility_cost)}</TableCell>
+                                          <TableCell align="right" className="border-r border-slate-200 font-mono font-black tabular-nums text-emerald-600">
+                                            {!row.cost_status || row.cost_status === "ok" ? formatCurrency(row.net_profit) : "Unavailable"}
+                                          </TableCell>
+                                          <TableCell align="right" className="border-r border-slate-200">
                                             {!row.cost_status || row.cost_status === "ok" ? (
                                               <Badge variant={row.net_margin_pct > 50 ? "success" : (row.net_margin_pct < 40 ? "danger" : "neutral")} className="text-xs 2xl:text-sm font-bold py-1 px-2.5 rounded-lg">
                                                 {row.net_margin_pct}%
@@ -853,13 +933,23 @@ export default function RecipesPage() {
                                             ) : (
                                               <span className="text-xs font-bold text-slate-400">Unavailable</span>
                                             )}
-                                          </td>
+                                          </TableCell>
                                         </>
                                       )}
-                                      <td className="px-3 py-3 text-right text-slate-400 2xl:px-6 2xl:py-4 2xl:pl-2">
-                                        <ChevronRight size={18} />
-                                      </td>
-                                    </tr>
+                                      <TableCell align="right">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-10"
+                                          onClick={() => fetchDetails(row.sku)}
+                                          aria-label={`Open bill of materials for ${row.product_name}`}
+                                          rightIcon={<ChevronRight size={16} />}
+                                        >
+                                          View BOM
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
                                   ))}
                                 </React.Fragment>
                               );
@@ -869,15 +959,14 @@ export default function RecipesPage() {
                       })}
                     </tbody>
                   </table>
-                </div>
-              </CardContent>
-            </Card>
+                </DataTableScroll>
+            </DataTableShell>
           </div>
         )}
 
         {/* 2. GIFT SET BUNDLES */}
         {activeTab === "bundles" && (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 2xl:gap-8 items-start">
+          <div id="recipe-panel-bundles" role="tabpanel" aria-labelledby="recipe-tab-bundles" className="grid grid-cols-1 xl:grid-cols-3 gap-6 2xl:gap-8 items-start">
             
             {/* Component Stepper Selection Card */}
             <Card className="xl:col-span-1 rounded-3xl border-slate-200 shadow-sm">
@@ -887,8 +976,9 @@ export default function RecipesPage() {
               </CardHeader>
               <CardContent className="p-5 sm:p-6 2xl:p-8 space-y-4">
                 <div>
-                  <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Bundle Name</label>
+                  <label htmlFor="bundle-name" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Bundle Name</label>
                   <input
+                    id="bundle-name"
                     type="text"
                     placeholder="e.g. Premium Trio Box"
                     value={newSetName}
@@ -897,10 +987,11 @@ export default function RecipesPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Box Cost (₱)</label>
+                    <label htmlFor="bundle-box-cost" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Box Cost (₱)</label>
                     <input
+                      id="bundle-box-cost"
                       type="number"
                       value={newSetPackaging}
                       onChange={(e) => setNewSetPackaging(parseFloat(e.target.value) || 0)}
@@ -908,8 +999,9 @@ export default function RecipesPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Retail SRP</label>
+                    <label htmlFor="bundle-retail-price" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Retail SRP</label>
                     <input
+                      id="bundle-retail-price"
                       type="number"
                       value={newSetRetail}
                       onChange={(e) => setNewSetRetail(parseFloat(e.target.value) || 0)}
@@ -917,8 +1009,9 @@ export default function RecipesPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Reseller wholesale</label>
+                    <label htmlFor="bundle-reseller-price" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Reseller wholesale</label>
                     <input
+                      id="bundle-reseller-price"
                       type="number"
                       value={newSetReseller}
                       onChange={(e) => setNewSetReseller(parseFloat(e.target.value) || 0)}
@@ -934,23 +1027,21 @@ export default function RecipesPage() {
                     {products.map(p => {
                       const qty = bundleQuantities[p.sku] || 0;
                       return (
-                        <div key={p.sku} className="flex justify-between items-center py-2.5 px-4 bg-white border border-slate-250 rounded-xl text-xs shadow-3xs">
-                          <span className="flex min-w-0 items-center gap-2 pr-3 font-bold text-slate-700"><span className="truncate">{p.product_name}</span><ProductSizeBadge size={p.size} sku={p.sku} /></span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => handleStepBundleQty(p.sku, -1)}
-                              className="w-7 h-7 rounded border border-slate-300 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600"
-                            >
-                              <Minus size={11} className="stroke-[3]" />
-                            </button>
-                            <span className="w-6 text-center font-mono font-black text-sm">{qty}</span>
-                            <button
-                              onClick={() => handleStepBundleQty(p.sku, 1)}
-                              className="w-7 h-7 rounded border border-slate-300 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600"
-                            >
-                              <Plus size={11} className="stroke-[3]" />
-                            </button>
-                          </div>
+                        <div key={p.sku} className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-slate-250 bg-white px-4 py-2.5 text-xs shadow-3xs">
+                          <ProductDisplay
+                            sku={p.sku}
+                            productName={p.product_name}
+                            category={p.category}
+                            size={p.size}
+                            variant="selector"
+                            showIcon={false}
+                          />
+                          <NumericQuantityInput
+                            value={qty}
+                            onChange={(value) => handleBundleQtyChange(p.sku, value)}
+                            label={`Bundle quantity for ${p.product_name}`}
+                            className="shrink-0"
+                          />
                         </div>
                       );
                     })}
@@ -958,8 +1049,9 @@ export default function RecipesPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Description Remarks</label>
+                  <label htmlFor="bundle-description" className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Description Remarks</label>
                   <input
+                    id="bundle-description"
                     type="text"
                     placeholder="e.g. Includes ribbon and tag"
                     value={newSetNotes}
@@ -993,8 +1085,11 @@ export default function RecipesPage() {
                     giftSets.map((gs) => (
                       <div key={gs.id} className="border-2 border-slate-150 rounded-2xl p-6 space-y-4 relative hover:border-slate-350 transition-colors shadow-3xs bg-white">
                         <button
+                          type="button"
                           onClick={() => handleTriggerDelete(gs.id)}
-                          className="absolute top-4 right-4 text-slate-455 hover:text-danger transition-colors p-2 hover:bg-slate-50 rounded-xl cursor-pointer"
+                          aria-label={`Delete gift set ${gs.name}`}
+                          title={`Delete ${gs.name}`}
+                          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-455 transition-colors hover:bg-slate-50 hover:text-danger cursor-pointer"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1008,16 +1103,16 @@ export default function RecipesPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs md:text-sm font-semibold text-slate-600">
                           <div>
                             <span className="text-[10px] text-slate-455 font-black uppercase tracking-wider block">Retail SRP</span>
-                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">₱{gs.retail_price.toFixed(2)}</span>
+                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">{formatCurrency(gs.retail_price)}</span>
                           </div>
                           <div>
                             <span className="text-[10px] text-slate-455 font-black uppercase tracking-wider block">Reseller Wholesale</span>
-                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">₱{gs.reseller_price.toFixed(2)}</span>
+                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">{formatCurrency(gs.reseller_price)}</span>
                           </div>
                           <div>
                             <span className="text-[10px] text-slate-455 font-black uppercase tracking-wider block">Combined Costs</span>
-                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">₱{gs.calculated_total_cost.toFixed(2)}</span>
-                            <span className="text-[10px] text-slate-455 font-bold block mt-1.5 font-mono">Box cost: ₱{gs.packaging_cost}</span>
+                            <span className="font-black text-slate-800 font-mono text-base mt-1 block">{formatCurrency(gs.calculated_total_cost)}</span>
+                            <span className="text-[10px] text-slate-455 font-bold block mt-1.5 font-mono">Box cost: {formatCurrency(gs.packaging_cost)}</span>
                           </div>
                           <div>
                             <span className="text-[10px] text-slate-455 font-black uppercase tracking-wider block">Gross Margin %</span>
@@ -1034,14 +1129,22 @@ export default function RecipesPage() {
                         <div className="space-y-2">
                           <span className="text-[10px] text-slate-455 font-black uppercase block">Bundle Contents:</span>
                           <div className="flex flex-wrap gap-2">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {gs.items.map((item: any) => (
-                              <div key={item.id} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                <span className="text-primary font-black">{item.quantity}x</span>
-                                <span>{item.product_name}</span>
-                                <ProductSizeBadge size={item.size} sku={item.sku} />
-                              </div>
-                            ))}
+                            {gs.items.map((item) => {
+                              const product = products.find((candidate) => candidate.sku === item.sku);
+                              return (
+                                <div key={item.id} className="flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700">
+                                  <span className="shrink-0 font-mono font-black text-primary">{formatProductQuantity(product || item, item.quantity)}</span>
+                                  <ProductDisplay
+                                    sku={item.sku}
+                                    productName={item.product_name}
+                                    category={product?.category || item.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                                    size={item.size}
+                                    variant="selector"
+                                    showIcon={false}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
@@ -1055,23 +1158,23 @@ export default function RecipesPage() {
 
         {/* 3. OVERHEAD ALLOCATION SETTINGS */}
         {activeTab === "overhead" && (
-          <div className="max-w-4xl mx-auto w-full">
+          <div id="recipe-panel-overhead" role="tabpanel" aria-labelledby="recipe-tab-overhead" className="max-w-4xl mx-auto w-full">
             <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
               <CardHeader className="p-5 sm:p-6 2xl:p-8 bg-slate-50/50 border-b border-slate-100">
                 <CardTitle className="text-lg md:text-xl font-heading font-black">Category Overheads Cost Setup</CardTitle>
                 <CardDescription className="text-sm mt-1 text-slate-555">Allocate standard labor and utility costs per item category:</CardDescription>
               </CardHeader>
               <CardContent className="p-0 bg-white">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-sm text-slate-700">
+                <DataTableScroll label="Category overhead rates">
+                  <table className="w-full min-w-[820px] border-collapse text-left text-sm text-slate-700">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                        <th className="px-6 py-4.5">Product Category</th>
-                        <th className="px-6 py-4.5 text-right pr-8">Labor Cost Allocation (₱ / unit)</th>
-                        <th className="px-6 py-4.5 text-right pr-8">Utility Cost Allocation (₱ / unit)</th>
-                        <th className="px-6 py-4.5 text-right">Total Allocated Overhead</th>
-                        <th className="px-6 py-4.5 text-right">Save</th>
-                      </tr>
+                      <TableHeaderRow>
+                        <TableHeaderCell>Product Category</TableHeaderCell>
+                        <TableHeaderCell align="right">Labor Cost Allocation (₱ / unit)</TableHeaderCell>
+                        <TableHeaderCell align="right">Utility Cost Allocation (₱ / unit)</TableHeaderCell>
+                        <TableHeaderCell align="right">Total Allocated Overhead</TableHeaderCell>
+                        <TableHeaderCell align="right">Save</TableHeaderCell>
+                      </TableHeaderRow>
                     </thead>
                     <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
                       {overheadRates.map((rate) => {
@@ -1081,32 +1184,34 @@ export default function RecipesPage() {
                         const isDirty = editLabor[rate.category] !== undefined || editUtility[rate.category] !== undefined;
 
                         return (
-                          <tr key={rate.category} className="hover:bg-slate-50/20 transition-colors">
-                            <td className="px-6 py-4 font-black text-slate-800 capitalize text-base">{rate.category}</td>
+                          <TableRow key={rate.category}>
+                            <TableCell className="text-base font-black capitalize text-slate-800">{rate.category}</TableCell>
                             
-                            <td className="px-6 py-4 text-right pr-8">
+                            <TableCell align="right">
                               <input
                                 type="number"
                                 step={0.01}
                                 value={labor}
                                 onChange={(e) => setEditLabor({ ...editLabor, [rate.category]: e.target.value })}
-                                className="w-28 h-10 text-right font-mono font-bold border-2 border-slate-200 rounded-xl px-3 focus:border-primary"
+                                aria-label={`Labor cost allocation for ${rate.category}`}
+                                className="h-10 min-w-28 w-28 rounded-xl border-2 border-slate-200 px-3 text-right font-mono font-bold focus:border-primary"
                               />
-                            </td>
+                            </TableCell>
 
-                            <td className="px-6 py-4 text-right pr-8">
+                            <TableCell align="right">
                               <input
                                 type="number"
                                 step={0.01}
                                 value={util}
                                 onChange={(e) => setEditUtility({ ...editUtility, [rate.category]: e.target.value })}
-                                className="w-28 h-10 text-right font-mono font-bold border-2 border-slate-200 rounded-xl px-3 focus:border-primary"
+                                aria-label={`Utility cost allocation for ${rate.category}`}
+                                className="h-10 min-w-28 w-28 rounded-xl border-2 border-slate-200 px-3 text-right font-mono font-bold focus:border-primary"
                               />
-                            </td>
+                            </TableCell>
 
-                            <td className="px-6 py-4 text-right font-black text-slate-900 font-mono text-base">₱{total.toFixed(2)}</td>
+                            <TableCell align="right" className="font-mono text-base font-black text-slate-900">{formatCurrency(total)}</TableCell>
                             
-                            <td className="px-6 py-4 text-right">
+                            <TableCell align="right">
                               {isDirty && (
                                 <Button
                                   onClick={() => handleUpdateOverhead(rate.category)}
@@ -1119,13 +1224,16 @@ export default function RecipesPage() {
                                   {savingId === rate.category ? "Saving..." : "Save"}
                                 </Button>
                               )}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
+                      {overheadRates.length === 0 && (
+                        <TableEmptyState colSpan={5} title="No overhead rates configured" />
+                      )}
                     </tbody>
                   </table>
-                </div>
+                </DataTableScroll>
               </CardContent>
             </Card>
           </div>
@@ -1153,7 +1261,7 @@ export default function RecipesPage() {
                   <ProductDisplay
                     sku={details.sku}
                     productName={details.product_name}
-                    category={details.category || "Spread"}
+                    category={details.category || UNCATEGORIZED_BUSINESS_CATEGORY}
                     size={details.size}
                     showCategory={true}
                   />
@@ -1162,9 +1270,10 @@ export default function RecipesPage() {
                 {/* Yield and Portion fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase block mb-1">Yield Weight</label>
+                    <label htmlFor="recipe-yield-weight" className="text-xs text-slate-455 font-bold uppercase block mb-1">Yield Weight</label>
                     <div className="flex gap-2">
                       <input
+                        id="recipe-yield-weight"
                         type="number"
                         step="any"
                         value={editYieldWeight}
@@ -1173,18 +1282,21 @@ export default function RecipesPage() {
                         min={0}
                       />
                       <input
+                        id="recipe-yield-unit"
                         type="text"
                         value={editYieldUnit}
                         onChange={(e) => setEditYieldUnit(e.target.value)}
                         className="w-16 text-sm h-11 text-center font-mono border border-slate-200 rounded-xl"
                         placeholder="g"
+                        aria-label="Yield weight unit"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-slate-455 font-bold uppercase block mb-1">Portion Size</label>
+                    <label htmlFor="recipe-portion-size" className="text-xs text-slate-455 font-bold uppercase block mb-1">Portion Size</label>
                     <div className="flex gap-2">
                       <input
+                        id="recipe-portion-size"
                         type="number"
                         step="any"
                         value={editPortionSize}
@@ -1193,36 +1305,80 @@ export default function RecipesPage() {
                         min={0}
                       />
                       <input
+                        id="recipe-portion-unit"
                         type="text"
                         value={editPortionUnit}
                         onChange={(e) => setEditPortionUnit(e.target.value)}
                         className="w-16 text-sm h-11 text-center font-mono border border-slate-200 rounded-xl"
                         placeholder="g"
+                        aria-label="Portion size unit"
                       />
                     </div>
                   </div>
                 </div>
 
+                {/* LIVE COST ESTIMATE BANNER */}
+                {userRole === "owner" && (() => {
+                  const live = getLiveCalculations();
+                  const srp = details.selling_price || 120;
+                  const netProfit = srp - live.portionCost;
+                  const marginPct = srp > 0 ? Math.round((netProfit / srp) * 100) : 0;
+                  return (
+                    <div className="p-4 bg-[#885625]/5 border border-[#ece5da] rounded-2xl space-y-3">
+                      <span className="text-xs text-primary font-black uppercase tracking-wider block flex items-center gap-1.5">
+                        <TrendingUp size={16} /> Live Recipe Draft Cost Estimate
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-bold text-slate-655">
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-black">Draft Batch Cost</span>
+                          <span className="text-base font-black text-slate-800 block font-mono mt-1">{formatCurrency(live.batchCost)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-black">Draft Portion Cost</span>
+                          <span className="text-base font-black text-slate-800 block font-mono mt-1">{formatCurrency(live.portionCost)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-black">Draft Est. Margin</span>
+                          <span className={`text-base font-black block mt-1 ${marginPct < 40 ? "text-amber-600" : "text-emerald-600"}`}>
+                            {marginPct}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-black">Status</span>
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black uppercase bg-[#885625]/10 text-primary">
+                            Editing
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Ingredients list */}
                 <div className="space-y-2">
+
                   <span className="text-xs text-slate-455 font-bold uppercase tracking-wider block">Ingredients list</span>
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs max-h-80 overflow-y-auto">
-                    <table className="w-full text-left border-collapse text-sm">
+                  <DataTableScroll
+                    label="Editable recipe ingredients"
+                    className="max-h-80 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-3xs"
+                  >
+                    <table className="w-full min-w-[860px] border-collapse text-left text-sm">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-150 text-slate-550 font-black uppercase tracking-wider text-[10px]">
-                          <th className="px-4 py-3">Type</th>
-                          <th className="px-4 py-3">Ingredient</th>
-                          <th className="px-4 py-3 text-right">Quantity</th>
-                          <th className="px-4 py-3">Unit</th>
-                          <th className="px-4 py-3 text-center">Action</th>
-                        </tr>
+                        <TableHeaderRow>
+                          <TableHeaderCell>Type</TableHeaderCell>
+                          <TableHeaderCell>Ingredient</TableHeaderCell>
+                          <TableHeaderCell align="right">Quantity</TableHeaderCell>
+                          <TableHeaderCell>Unit</TableHeaderCell>
+                          <TableHeaderCell align="center">Action</TableHeaderCell>
+                        </TableHeaderRow>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
                         {editIngredients.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/20">
-                            <td className="px-4 py-2">
+                          <TableRow key={item.client_id ?? item.id}>
+                            <TableCell>
                               <select
                                 value={item.ingredient_type}
+                                aria-label={`Ingredient type for row ${idx + 1}`}
                                 onChange={(e) => {
                                   const updated = [...editIngredients];
                                   updated[idx].ingredient_type = e.target.value;
@@ -1240,22 +1396,23 @@ export default function RecipesPage() {
                                   }
                                   setEditIngredients(updated);
                                 }}
-                                className="h-9 py-1 px-2 border border-slate-200 rounded-lg text-xs"
+                                className="h-10 rounded-lg border border-slate-200 px-2 py-1 text-xs"
                               >
                                 <option value="raw">Raw Material</option>
                                 <option value="sku">Sub-product</option>
                               </select>
-                            </td>
-                            <td className="px-4 py-2 min-w-[150px]">
+                            </TableCell>
+                            <TableCell className="min-w-[190px]">
                               {item.ingredient_type === "raw" ? (
                                 <select
                                   value={item.raw_ingredient_id}
+                                  aria-label={`Raw material for row ${idx + 1}`}
                                   onChange={(e) => {
                                     const updated = [...editIngredients];
                                     updated[idx].raw_ingredient_id = Number(e.target.value);
                                     setEditIngredients(updated);
                                   }}
-                                  className="h-9 py-1 px-2 border border-slate-200 rounded-lg text-xs w-full"
+                                  className="h-10 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs"
                                 >
                                   {rawIngredients.map(r => (
                                     <option key={r.id} value={r.id}>{r.name}</option>
@@ -1264,67 +1421,68 @@ export default function RecipesPage() {
                               ) : (
                                 <select
                                   value={item.sub_sku}
+                                  aria-label={`Sub-product for row ${idx + 1}`}
                                   onChange={(e) => {
                                     const updated = [...editIngredients];
                                     updated[idx].sub_sku = e.target.value;
                                     setEditIngredients(updated);
                                   }}
-                                  className="h-9 py-1 px-2 border border-slate-200 rounded-lg text-xs w-full"
+                                  className="h-10 w-full rounded-lg border border-slate-200 px-2 py-1 text-xs"
                                 >
                                   {products.filter(p => p.sku !== selectedSku).map(p => (
                                     <option key={p.sku} value={p.sku}>{p.product_name} ({p.size})</option>
                                   ))}
                                 </select>
                               )}
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                              <input
-                                type="number"
-                                step="any"
-                                value={item.base_qty}
-                                onChange={(e) => {
+                            </TableCell>
+                            <TableCell align="right">
+                              <NumericQuantityInput
+                                value={Number(item.base_qty) || 0}
+                                onChange={(value) => {
                                   const updated = [...editIngredients];
-                                  updated[idx].base_qty = parseFloat(e.target.value) || 0;
+                                  updated[idx].base_qty = value;
                                   setEditIngredients(updated);
                                 }}
-                                className="w-20 h-9 px-2 text-right border border-slate-200 rounded-lg font-mono text-xs"
+                                label={`Recipe quantity for row ${idx + 1}`}
                                 min={0}
+                                step={0.01}
                               />
-                            </td>
-                            <td className="px-4 py-2">
+                            </TableCell>
+                            <TableCell>
                               <input
                                 type="text"
                                 value={item.base_unit}
+                                aria-label={`Recipe unit for row ${idx + 1}`}
                                 onChange={(e) => {
                                   const updated = [...editIngredients];
                                   updated[idx].base_unit = e.target.value;
                                   setEditIngredients(updated);
                                 }}
-                                className="w-16 h-9 px-2 text-center border border-slate-200 rounded-lg font-mono text-xs"
+                                className="h-10 min-w-20 w-20 rounded-lg border border-slate-200 px-2 text-center font-mono text-xs"
                                 placeholder="g"
                               />
-                            </td>
-                            <td className="px-4 py-2 text-center">
+                            </TableCell>
+                            <TableCell align="center">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setEditIngredients(editIngredients.filter((_, i) => i !== idx));
                                 }}
-                                className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                                aria-label={`Delete ingredient row ${idx + 1}`}
+                                title={`Delete ingredient row ${idx + 1}`}
+                                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
                               >
                                 <Trash2 size={14} />
                               </button>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
                         {editIngredients.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="py-8 text-center text-xs text-slate-455 font-semibold italic">No ingredients added yet.</td>
-                          </tr>
+                          <TableEmptyState colSpan={5} title="No ingredients added yet" />
                         )}
                       </tbody>
                     </table>
-                  </div>
+                  </DataTableScroll>
                   <div className="flex justify-start">
                     <Button
                       type="button"
@@ -1338,6 +1496,7 @@ export default function RecipesPage() {
                         setEditIngredients([
                           ...editIngredients,
                           {
+                            client_id: `recipe-ingredient-${crypto.randomUUID()}`,
                             ingredient_type: defaultType,
                             raw_ingredient_id: defaultRaw,
                             sub_sku: "",
@@ -1354,8 +1513,9 @@ export default function RecipesPage() {
 
                 {/* Notes */}
                 <div>
-                  <label className="text-xs text-slate-455 font-bold uppercase block mb-1">Recipe Notes</label>
+                  <label htmlFor="recipe-notes" className="text-xs text-slate-455 font-bold uppercase block mb-1">Recipe Notes</label>
                   <textarea
+                    id="recipe-notes"
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     placeholder="Yield weight, temperature settings, and cooking instructions..."
@@ -1369,7 +1529,7 @@ export default function RecipesPage() {
                   <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5">
                     <span className="text-xs font-black text-rose-700 uppercase tracking-wider block">⚠️ Please correct the following errors:</span>
                     <ul className="list-disc pl-5 text-xs text-rose-600 font-semibold space-y-0.5">
-                      {getBulkValidationErrors().map((err, i) => <li key={i}>{err}</li>)}
+                      {getBulkValidationErrors().map((err) => <li key={err}>{err}</li>)}
                     </ul>
                   </div>
                 )}
@@ -1399,10 +1559,16 @@ export default function RecipesPage() {
               </div>
             ) : (
               <div className="space-y-6 text-sm font-semibold text-slate-700 leading-relaxed">
-              <div>
+              <div className="space-y-2">
                 <span className="text-xs text-slate-400 font-bold uppercase block">Recipe Item</span>
-                <strong className="font-heading font-black text-slate-800 text-lg mt-0.5 flex flex-wrap items-center gap-2">{details.product_name} <ProductSizeBadge size={details.size} sku={details.sku} /> <span>&bull; Portion size: {details.portion_size}{details.portion_unit}</span></strong>
-                <span className="text-xs text-slate-400 font-mono mt-1 block">SKU Code: {details.sku}</span>
+                <ProductDisplay
+                  sku={details.sku}
+                  productName={details.product_name}
+                  category={details.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                  size={details.size}
+                  showCategory={true}
+                />
+                <p className="text-xs font-bold text-slate-500">Portion size: {details.portion_size}{details.portion_unit}</p>
               </div>
 
               {/* Portion Margin Warning and Analysis Block */}
@@ -1420,12 +1586,12 @@ export default function RecipesPage() {
                     <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                       <div>
                         <span className="text-xs text-slate-505 font-bold uppercase block">Batch Cost (Yield)</span>
-                        <span className="font-black text-slate-800 text-base font-mono mt-1 block">₱{details.calculated_batch_cost.toFixed(2)}</span>
+                        <span className="font-black text-slate-800 text-base font-mono mt-1 block">{formatCurrency(details.calculated_batch_cost)}</span>
                         <span className="text-xs text-slate-455 mt-1 block font-mono">Yield Weight: {details.yield_weight}{details.yield_unit}</span>
                       </div>
                       <div>
                         <span className="text-xs text-slate-505 font-bold uppercase block">Portion Cost (Unit)</span>
-                        <span className="font-black text-slate-800 text-base font-mono mt-1 block">₱{details.calculated_portion_cost.toFixed(2)}</span>
+                        <span className="font-black text-slate-800 text-base font-mono mt-1 block">{formatCurrency(details.calculated_portion_cost)}</span>
                         <span className="text-xs text-slate-455 mt-1 block font-semibold">
                           {details.cost_override !== null && details.cost_override > 0 ? "⚠️ Cost Override Rule Active" : "Includes package wrapper"}
                         </span>
@@ -1442,8 +1608,8 @@ export default function RecipesPage() {
                           </strong>
                           <span className="text-xs font-semibold leading-relaxed block mt-1">
                             {isNegative 
-                              ? `We are losing money (₱${Math.abs(netProfit).toFixed(2)}) on every single jar sold! Consider raising the SRP to at least ₱${(cost * 1.5).toFixed(0)}.`
-                              : `The profit margin is ${marginPct}% which is below our 40% goal. Consider adjusting the SRP to ₱${(cost * 1.6).toFixed(0)}.`}
+                              ? `We are losing money (${formatCurrency(Math.abs(netProfit))}) on every single jar sold! Consider raising the SRP to at least ${formatCurrency(cost * 1.5)}.`
+                              : `The profit margin is ${marginPct}% which is below our 40% goal. Consider adjusting the SRP to ${formatCurrency(cost * 1.6)}.`}
                           </span>
                         </div>
                       </div>
@@ -1467,24 +1633,42 @@ export default function RecipesPage() {
               {/* BOM table */}
               <div className="space-y-2">
                 <span className="text-xs text-slate-455 font-bold uppercase tracking-wider block">Bill of Materials (BOM)</span>
-                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white max-h-64 overflow-y-auto shadow-3xs">
-                  <table className="w-full text-left border-collapse text-sm">
+                <DataTableScroll
+                  label={`Bill of materials for ${details.product_name}`}
+                  className="max-h-64 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-3xs"
+                >
+                  <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-150 text-slate-550 font-black uppercase tracking-wider text-[10px] px-5 py-3">
-                        <th className="px-5 py-3">Material Item</th>
-                        <th className="px-5 py-3 text-right">Recipe Qty</th>
-                        {userRole === "owner" && <th className="px-5 py-3 text-right">Allocated Cost</th>}
-                      </tr>
+                      <TableHeaderRow>
+                        <TableHeaderCell>Material Item</TableHeaderCell>
+                        <TableHeaderCell align="right">Recipe Qty</TableHeaderCell>
+                        {userRole === "owner" && <TableHeaderCell align="right">Allocated Cost</TableHeaderCell>}
+                      </TableHeaderRow>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {details.ingredients.map((item: any) => (
-                        <tr key={item.id} className="hover:bg-slate-50/30">
-                          <td className="px-5 py-3.5 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              {item.ingredient_type === "sku" && <Layers size={12} className="text-slate-400" />}
-                              <span>{item.ingredient_type === "raw" ? item.raw_ingredient_name : item.sub_product_name}</span>
-                            </div>
+                      {(details.ingredients || []).map((item) => {
+                        const subProduct = item.ingredient_type === "sku"
+                          ? products.find((product) => product.sku === item.sub_sku)
+                          : null;
+                        const itemKey = item.id ?? `${item.ingredient_type}-${item.raw_ingredient_id ?? item.sub_sku}`;
+
+                        return (
+                        <TableRow key={itemKey}>
+                          <TableCell>
+                            <div className="flex items-center justify-between gap-2">
+                              {item.ingredient_type === "raw" ? (
+                                <span>{item.raw_ingredient_name}</span>
+                              ) : (
+                                <ProductDisplay
+                                  sku={item.sub_sku || subProduct?.sku || "Unknown SKU"}
+                                  productName={item.sub_product_name || subProduct?.product_name || item.sub_sku || "Unknown sub-product"}
+                                  category={subProduct?.category || item.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                                  size={subProduct?.size || item.size}
+                                  variant="compact"
+                                  showIcon={false}
+                                  showMissingSize={false}
+                                />
+                              )}
                             {userRole === "owner" && item.ingredient_type === "raw" && (
                               <button
                                 type="button"
@@ -1493,14 +1677,16 @@ export default function RecipesPage() {
                                   setSelectedRawName(item.raw_ingredient_name);
                                   setIsEditPriceOpen(true);
                                 }}
-                                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-primary rounded transition-all cursor-pointer"
+                                aria-label={`Edit unit price for ${item.raw_ingredient_name}`}
+                                className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary"
                                 title="Edit raw material unit price"
                               >
                                 <Edit3 size={12} />
                               </button>
                             )}
-                          </td>
-                          <td className="px-5 py-3.5 text-right">
+                            </div>
+                          </TableCell>
+                          <TableCell align="right">
                             <div className="flex justify-end items-center gap-1.5 font-mono text-slate-555 text-sm">
                               <span>{item.base_qty} {item.base_unit}</span>
                               {userRole === "owner" && (
@@ -1510,22 +1696,32 @@ export default function RecipesPage() {
                                     setSelectedRecipeItem(item);
                                     setIsEditQtyOpen(true);
                                   }}
-                                  className="p-1 hover:bg-slate-100 text-slate-400 hover:text-primary rounded transition-all cursor-pointer"
+                                  aria-label={`Edit recipe quantity for ${item.raw_ingredient_name || item.sub_product_name || item.sub_sku}`}
+                                  className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary"
                                   title="Edit recipe ingredient quantity"
                                 >
                                   <Edit3 size={12} />
                                 </button>
                               )}
                             </div>
-                          </td>
+                          </TableCell>
                           {userRole === "owner" && (
-                            <td className="px-5 py-3.5 text-right font-black text-slate-900 font-mono text-base">₱{item.calculated_cost.toFixed(2)}</td>
+                            <TableCell align="right" className="font-mono text-base font-black text-slate-900">
+                              {formatCurrency(item.calculated_cost)}
+                            </TableCell>
                           )}
-                        </tr>
-                      ))}
+                        </TableRow>
+                        );
+                      })}
+                      {(details.ingredients || []).length === 0 && (
+                        <TableEmptyState
+                          colSpan={userRole === "owner" ? 3 : 2}
+                          title="No ingredients in this recipe"
+                        />
+                      )}
                     </tbody>
                   </table>
-                </div>
+                </DataTableScroll>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
@@ -1556,7 +1752,17 @@ export default function RecipesPage() {
           onClose={() => setShowConfirmClose(false)}
           onConfirm={() => {
             setShowConfirmClose(false);
+            if (details) {
+              setEditYieldWeight(details.yield_weight || 0);
+              setEditYieldUnit(details.yield_unit || "g");
+              setEditPortionSize(details.portion_size || 0);
+              setEditPortionUnit(details.portion_unit || "g");
+              setEditNotes(details.notes || "");
+              setEditIngredients([]);
+            }
             setIsEditing(false);
+            setSelectedSku(null);
+            setDetails(null);
           }}
           title="Discard Unsaved Changes?"
           confirmLabel="Discard Changes"
@@ -1581,8 +1787,8 @@ export default function RecipesPage() {
               <p>Please review the proposed recipe updates before applying them to the costing engine:</p>
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs text-slate-600 space-y-1.5 max-h-48 overflow-y-auto">
                 {getChangeSummary().length > 0 ? (
-                  getChangeSummary().map((change, i) => (
-                    <div key={i} className="flex gap-2">
+                  getChangeSummary().map((change) => (
+                    <div key={change} className="flex gap-2">
                       <span className="text-amber-600 shrink-0">❖</span>
                       <span>{change}</span>
                     </div>

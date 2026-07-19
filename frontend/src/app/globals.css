@@ -218,6 +218,17 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
+.quantity-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 thead th {
   color: #6b7280;
   font-size: 0.72rem;
@@ -348,4 +359,47 @@ select option {
 }
 .border-\[\#cfaf45\] {
   border-color: #bc9037 !important;
+}
+
+/* ============================================================
+   GLOBAL DATA TABLES STYLE UNIFICATION — ROW & COLUMN LINES
+   ============================================================ */
+table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+table th {
+  background-color: #faf6ef !important; /* light warm beige header */
+  color: #885625 !important;           /* brand warm brown */
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border: 1px solid var(--border) !important;
+  padding: 0.75rem 1rem !important;    /* Unified cell padding */
+  font-size: 0.75rem !important;       /* Unified header font-size */
+}
+
+table td {
+  border: 1px solid var(--border) !important;
+  padding: 0.875rem 1rem !important;   /* Unified row padding */
+  font-size: 0.875rem !important;      /* Unified body font-size */
+  vertical-align: middle !important;
+}
+
+table tr:hover {
+  background-color: rgba(136, 86, 37, 0.02) !important;
+}
+
+/* Enforce the global fonts system cleanly */
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-heading) !important;
+}
+
+p, span, div, input, select, textarea, button, td, th {
+  font-family: var(--font-sans) !important;
+}
+
+.font-mono, td.font-mono, span.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
 }

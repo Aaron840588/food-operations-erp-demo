@@ -3,7 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { api, type ProductSKUOut, type ProductionForecastOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import { getProductBusinessCategory, BUSINESS_CATEGORIES } from "@/lib/utils";
+import {
+  BUSINESS_CATEGORIES,
+  UNCATEGORIZED_BUSINESS_CATEGORY,
+  formatProductQuantity,
+  getProductBusinessCategory,
+  getProductSizeGroup,
+  isCurrentLineupProduct,
+} from "@/lib/utils";
 import { ProductSizeBadge } from "@/components/ui/ProductSizeBadge";
 import { ProductDisplay } from "@/components/ui/ProductDisplay";
 import { 
@@ -13,8 +20,6 @@ import {
   CheckSquare, 
   ShoppingCart,
   ChefHat,
-  Plus,
-  Minus,
   AlertTriangle,
   Sparkles,
   ChevronDown,
@@ -25,9 +30,23 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmationModal } from "@/components/ui/Modal";
+import {
+  DataTableScroll,
+  DataTableShell,
+  TableCell,
+  TableEmptyState,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableLoadingState,
+  TableRow,
+} from "@/components/ui/DataTable";
+import { NumericQuantityInput } from "@/components/ui/NumericQuantityInput";
+
+type MaterialChecklistGroups = Record<string, ProductionForecastOut["material_checklist"]>;
 
 export default function PlannerPage() {
   const [products, setProducts] = useState<ProductSKUOut[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [quantities, setQuantities] = useState<{ [sku: string]: number }>({});
   const [planDate, setPlanDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedOutlet, setSelectedOutlet] = useState("General Stock");
@@ -44,12 +63,12 @@ export default function PlannerPage() {
   const [collapsedCategories, setCollapsedCategories] = useState<{ [category: string]: boolean }>({});
 
   // Automatic suggestions state
-  const [recommendations, setRecommendations] = useState<Array<{ sku: string; name: string; size: string; currentStock: number; suggestedQty: number }>>([]);
+  const [recommendations, setRecommendations] = useState<Array<{ sku: string; name: string; category: string; size: string; currentStock: number; suggestedQty: number }>>([]);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
 
   useEffect(() => {
     api.getProducts().then(res => {
-      const filtered = (res || []).filter((p) => p.sku !== "SKU" && p.is_active !== false);
+      const filtered = (res || []).filter((p) => p.sku !== "SKU" && p.is_active !== false && isCurrentLineupProduct(p));
       setProducts(filtered);
 
       // Generate smart cooking recommendations based on warehouse stock levels (if stock is below 15 jars)
@@ -57,12 +76,13 @@ export default function PlannerPage() {
       const suggestions = lowStockProducts.map((p) => ({
         sku: p.sku,
         name: p.product_name,
+        category: p.category,
         size: p.size,
         currentStock: p.warehouse_stock ?? 0,
         suggestedQty: 24 // Suggest standard double batch (2 boxes of 12)
       }));
       setRecommendations(suggestions);
-    }).catch(console.error);
+    }).catch(console.error).finally(() => setProductsLoading(false));
   }, []);
 
   const handleQtyChange = (sku: string, val: number) => {
@@ -95,7 +115,7 @@ export default function PlannerPage() {
     "Other / uncategorized"
   ];
 
-  const getSortedCategoryKeys = (groups: { [key: string]: any }) => {
+  const getSortedCategoryKeys = (groups: MaterialChecklistGroups) => {
     return Object.keys(groups).sort((a, b) => {
       const idxA = CATEGORY_ORDER.indexOf(a);
       const idxB = CATEGORY_ORDER.indexOf(b);
@@ -116,7 +136,7 @@ export default function PlannerPage() {
       (item.category && item.category.toLowerCase().includes(searchLower))
     );
 
-    const groups: { [category: string]: typeof forecast.material_checklist } = {};
+    const groups: MaterialChecklistGroups = {};
     
     filtered.forEach(item => {
       const cat = item.category || "Other / uncategorized";
@@ -213,11 +233,15 @@ export default function PlannerPage() {
   BUSINESS_CATEGORIES.forEach(c => {
     categories[c] = [];
   });
+  categories[UNCATEGORIZED_BUSINESS_CATEGORY] = [];
   products.forEach(p => {
     const cat = getProductBusinessCategory(p);
     if (!categories[cat]) categories[cat] = [];
     categories[cat].push(p);
   });
+  const visibleCategoryEntries = Object.entries(categories)
+    .filter(([categoryName]) => selectedCategory === "All" || categoryName === selectedCategory);
+  const visibleProductCount = visibleCategoryEntries.reduce((total, [, items]) => total + items.length, 0);
 
   return (
     <div className="space-y-5 2xl:space-y-6 flex flex-col pb-16 print:p-0 print:space-y-0">
@@ -327,12 +351,13 @@ export default function PlannerPage() {
         <CardContent className="p-5 sm:p-6 2xl:p-8">
           {/* Category Tabs Selector (Unifying UI/Design language!) */}
           <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-            {["All", "Spreads & Sauces", "Sandwiches & Salads"].map((cat) => (
+            {["All", ...BUSINESS_CATEGORIES, UNCATEGORIZED_BUSINESS_CATEGORY].map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
+                aria-pressed={selectedCategory === cat}
+                className={`min-h-10 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-2 cursor-pointer ${
                   selectedCategory === cat
                     ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                     : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
@@ -343,77 +368,66 @@ export default function PlannerPage() {
             ))}
           </div>
 
-          <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-            <CardContent className="p-0 bg-white">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse border border-slate-200 text-sm text-slate-700">
+          <DataTableShell className="rounded-3xl">
+            <DataTableScroll label="Production target products" className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-collapse text-left text-sm text-slate-700">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                      <th className="px-4 py-3 border-r border-slate-200 2xl:px-6 2xl:py-4.5">Product Name &amp; SKU</th>
-                      <th className="px-3 py-3 border-r border-slate-200 text-right 2xl:px-6 2xl:py-4.5">In Warehouse</th>
-                      <th className="px-3 py-3 text-center 2xl:px-6 2xl:py-4.5">Schedule Target</th>
-                    </tr>
+                    <TableHeaderRow>
+                      <TableHeaderCell className="border-r border-slate-200">Product Name &amp; SKU</TableHeaderCell>
+                      <TableHeaderCell align="right" className="border-r border-slate-200">In Warehouse</TableHeaderCell>
+                      <TableHeaderCell align="center">Schedule Target</TableHeaderCell>
+                    </TableHeaderRow>
                   </thead>
-                  <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
-                    {Object.entries(categories)
-                      .filter(([catName]) => selectedCategory === "All" || catName === selectedCategory)
-                      .map(([catName, catProds]) => {
+                  <tbody className="font-semibold text-slate-700">
+                    {productsLoading ? (
+                      <TableLoadingState colSpan={3} title="Loading production products…" />
+                    ) : visibleProductCount === 0 ? (
+                      <TableEmptyState
+                        colSpan={3}
+                        title="No products in this category"
+                        description="Choose another category or review the active product lineup."
+                      />
+                    ) : null}
+                    {!productsLoading && visibleCategoryEntries.map(([catName, catProds]) => {
                         if (catProds.length === 0) return null;
                         
-                        // Group by size group
-                        const sizeGroups: { [size: string]: ProductSKUOut[] } = {};
-                        catProds.forEach(p => {
-                          const sizeLower = (p.size || "").toLowerCase().trim();
-                          let sizeGroup = "Other Sizes";
-                          if (catName === "Spreads & Sauces") {
-                            const isSavory = p.sku.includes("SVR") || p.sku.startsWith("PP") || p.sku.startsWith("CGO") || p.sku.startsWith("CLS");
-                            if (sizeLower.includes("sampler") || sizeLower.includes("sam") || sizeLower.includes("110")) {
-                              sizeGroup = isSavory ? "Savory Spreads (Sampler / 100g)" : "Sweet Spreads (Sampler / 100g)";
-                            } else if (sizeLower.includes("indulge") || sizeLower.includes("ind") || sizeLower.includes("240") || sizeLower.includes("220") || sizeLower.includes("250")) {
-                              sizeGroup = isSavory ? "Savory Spreads (Indulge / 200g)" : "Sweet Spreads (Indulge / 240g)";
-                            }
+                        const sizeGroups = new Map<string, { label: string; order: number; items: ProductSKUOut[] }>();
+                        catProds.forEach((product) => {
+                          const group = getProductSizeGroup(product);
+                          const existing = sizeGroups.get(group.key);
+                          if (existing) {
+                            existing.items.push(product);
                           } else {
-                            if (sizeLower.includes("half") || sizeLower.includes("hf")) {
-                              sizeGroup = "Half Size (Snack Portion)";
-                            } else if (sizeLower.includes("full") || sizeLower.includes("fl")) {
-                              sizeGroup = "Full Size (Double Portion)";
-                            } else if (sizeLower.includes("solo") || sizeLower.includes("sl")) {
-                              sizeGroup = "Solo Size (Single Portion)";
-                            }
+                            sizeGroups.set(group.key, { label: group.label, order: group.order, items: [product] });
                           }
-                          if (!sizeGroups[sizeGroup]) sizeGroups[sizeGroup] = [];
-                          sizeGroups[sizeGroup].push(p);
                         });
 
                         return (
                           <React.Fragment key={catName}>
                             {/* Category Row */}
-                            <tr className="bg-[#885625]/5 select-none border-t-2 border-slate-200">
-                              <td colSpan={3} className="px-4 py-3 2xl:px-6 2xl:py-4">
-                                <span className="text-sm font-heading font-black text-[#885625] uppercase tracking-wider flex items-center gap-1.5">
-                                  🚀 {catName}
+                            <tr className="select-none border-t-2 border-slate-200 bg-[#885625]/5">
+                              <th scope="rowgroup" colSpan={3} className="px-4 py-3 text-left sm:px-5">
+                                <span className="flex items-center gap-1.5 font-heading text-sm font-black uppercase tracking-wider text-[#885625]">
+                                  {catName}
                                 </span>
-                              </td>
+                              </th>
                             </tr>
 
-                            {Object.entries(sizeGroups).map(([sizeGroupName, items]) => {
-                              if (items.length === 0) return null;
+                            {[...sizeGroups.values()].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)).map((sizeGroup) => {
                               return (
-                                <React.Fragment key={sizeGroupName}>
+                                <React.Fragment key={sizeGroup.label}>
                                   {/* Size Row */}
-                                  <tr className="bg-slate-50/50 select-none border-t border-b border-slate-100">
-                                    <td colSpan={3} className="px-4 py-2.5 2xl:px-8 2xl:py-3">
-                                      <span className="text-xs font-black text-slate-500 uppercase tracking-wider">
-                                        📦 {sizeGroupName}
-                                      </span>
-                                    </td>
+                                  <tr className="select-none border-y border-slate-100 bg-slate-50/70">
+                                    <th scope="rowgroup" colSpan={3} className="px-4 py-2.5 text-left text-xs font-black uppercase tracking-wider text-slate-500 sm:px-5">
+                                      {sizeGroup.label}
+                                    </th>
                                   </tr>
 
-                                  {items.map((p) => {
+                                  {sizeGroup.items.map((p) => {
                                     const qty = quantities[p.sku] || 0;
                                     return (
-                                      <tr key={p.sku} className="hover:bg-slate-50/20 transition-colors">
-                                        <td className="px-4 py-3 border-r border-slate-200 2xl:px-8 2xl:py-4">
+                                      <TableRow key={p.sku}>
+                                        <TableCell className="border-r border-slate-200">
                                           <ProductDisplay
                                             sku={p.sku}
                                             productName={p.product_name}
@@ -421,37 +435,19 @@ export default function PlannerPage() {
                                             size={p.size}
                                             isActive={p.is_active}
                                           />
-                                        </td>
-                                        <td className="px-3 py-3 border-r border-slate-200 text-right font-mono font-black text-slate-900 text-sm 2xl:px-6 2xl:py-4 2xl:text-base">
-                                          {p.warehouse_stock} units
-                                        </td>
-                                        <td className="px-3 py-3">
-                                          <div className="flex justify-center items-center gap-2">
-                                            <button
-                                              onClick={() => handleQtyChange(p.sku, qty - 1)}
-                                              type="button"
-                                              className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                            >
-                                              <Minus size={11} className="stroke-[3]" />
-                                            </button>
-                                            <input
-                                              type="number"
-                                              min={0}
-                                              placeholder="0"
-                                              value={qty || ""}
-                                              onChange={(e) => handleQtyChange(p.sku, parseInt(e.target.value) || 0)}
-                                              className="w-16 h-8 text-center font-mono font-black text-xs border-2 border-slate-200 rounded-lg text-slate-800 focus:border-primary focus:ring-0"
-                                            />
-                                            <button
-                                              onClick={() => handleQtyChange(p.sku, qty + 1)}
-                                              type="button"
-                                              className="w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer text-slate-600 bg-white"
-                                            >
-                                              <Plus size={11} className="stroke-[3]" />
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </tr>
+                                        </TableCell>
+                                        <TableCell align="right" className="border-r border-slate-200 font-mono font-black tabular-nums text-slate-900">
+                                          {formatProductQuantity(p, p.warehouse_stock ?? 0)}
+                                        </TableCell>
+                                        <TableCell align="center">
+                                          <NumericQuantityInput
+                                            value={qty}
+                                            onChange={(value) => handleQtyChange(p.sku, value)}
+                                            label={`Schedule target for ${p.product_name}`}
+                                            className="justify-center"
+                                          />
+                                        </TableCell>
+                                      </TableRow>
                                     );
                                   })}
                                 </React.Fragment>
@@ -459,12 +455,11 @@ export default function PlannerPage() {
                             })}
                           </React.Fragment>
                         );
-                      })}
+                    })}
                   </tbody>
                 </table>
-              </div>
-            </CardContent>
-          </Card>
+            </DataTableScroll>
+          </DataTableShell>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-8">
             <Button
@@ -499,8 +494,7 @@ export default function PlannerPage() {
           {/* Missing Recipes Warnings */}
           {(() => {
             const activeTargets = getActiveTargets();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const scaledSkus = forecast.scaled_recipes.map((r: any) => r.target_sku);
+            const scaledSkus = forecast.scaled_recipes.map((recipe) => recipe.target_sku);
             const missingSkus = activeTargets.filter(t => !scaledSkus.includes(t.sku));
             
             if (missingSkus.length > 0) {
@@ -609,7 +603,8 @@ export default function PlannerPage() {
                   return sortedKeys.map((category) => {
                     const items = groups[category];
                     const isCollapsed = !!collapsedCategories[category];
-                    const categoryShortageCount = items.filter((item: any) => item.deficit > 0).length;
+                    const categoryShortageCount = items.filter((item) => item.deficit > 0).length;
+                    const categoryPanelId = `shopping-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
                     return (
                       <div key={category} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs">
@@ -617,6 +612,8 @@ export default function PlannerPage() {
                         <button
                           type="button"
                           onClick={() => toggleCategoryCollapsed(category)}
+                          aria-expanded={!isCollapsed}
+                          aria-controls={categoryPanelId}
                           className="w-full flex items-center justify-between p-4 bg-slate-50 border-b border-slate-200 font-black text-slate-800 text-sm hover:bg-slate-100/50 transition-colors"
                         >
                           <div className="flex items-center gap-2">
@@ -635,21 +632,21 @@ export default function PlannerPage() {
 
                         {/* Collapsible Content */}
                         {!isCollapsed && (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse text-xs">
+                          <DataTableScroll id={categoryPanelId} label={`${category} ingredient shopping checklist`} className="overflow-x-auto">
+                            <table className="w-full min-w-[660px] border-collapse text-left text-sm">
                               <thead>
-                                <tr className="bg-slate-50/50 border-b border-slate-150 text-slate-550 font-black uppercase tracking-wider text-[10px]">
-                                  <th className="px-4 py-3">Ingredient</th>
-                                  <th className="px-4 py-3 text-right">Needed</th>
-                                  <th className="px-4 py-3 text-right">In Stock</th>
-                                  <th className="px-4 py-3 text-right">Deficit</th>
-                                  <th className="px-4 py-3 text-right">Packs to Buy</th>
-                                </tr>
+                                <TableHeaderRow>
+                                  <TableHeaderCell>Ingredient</TableHeaderCell>
+                                  <TableHeaderCell align="right">Needed</TableHeaderCell>
+                                  <TableHeaderCell align="right">In Stock</TableHeaderCell>
+                                  <TableHeaderCell align="right">Deficit</TableHeaderCell>
+                                  <TableHeaderCell align="right">Packs to Buy</TableHeaderCell>
+                                </TableHeaderRow>
                               </thead>
-                              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                                {items.map((item: any, idx: number) => (
-                                  <tr key={idx} className={`hover:bg-slate-50/20 transition-colors ${item.deficit > 0 ? "bg-rose-50/40 text-rose-900 font-bold" : ""}`}>
-                                    <td className="px-4 py-3">
+                              <tbody className="font-semibold text-slate-700">
+                                {items.map((item) => (
+                                  <TableRow key={item.raw_ingredient_id ?? `${item.ingredient_name}-${item.unit}`} className={item.deficit > 0 ? "bg-rose-50/40 font-bold text-rose-900" : ""}>
+                                    <TableCell>
                                       <div className="flex flex-col">
                                         <span className="text-sm font-black text-slate-800">{item.ingredient_name}</span>
                                         {item.parent_products && item.parent_products.length > 0 && (
@@ -658,20 +655,20 @@ export default function PlannerPage() {
                                           </span>
                                         )}
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-right font-mono text-slate-800">{item.total_needed} {item.unit}</td>
-                                    <td className="px-4 py-3 text-right font-mono text-slate-400">{item.available_stock} {item.unit}</td>
-                                    <td className={`px-4 py-3 text-right font-mono font-black ${item.deficit > 0 ? "text-rose-600 text-sm" : "text-slate-450"}`}>
+                                    </TableCell>
+                                    <TableCell align="right" className="font-mono tabular-nums text-slate-800">{item.total_needed} {item.unit}</TableCell>
+                                    <TableCell align="right" className="font-mono tabular-nums text-slate-400">{item.available_stock} {item.unit}</TableCell>
+                                    <TableCell align="right" className={`font-mono font-black tabular-nums ${item.deficit > 0 ? "text-rose-600" : "text-slate-450"}`}>
                                       {item.deficit > 0 ? `${item.deficit} ${item.unit}` : "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
+                                    </TableCell>
+                                    <TableCell align="right">
                                       {item.packs_to_buy > 0 ? (
                                         <Badge variant="warning" className="font-bold py-2 px-2.5 rounded-lg text-[10px]">Buy {item.packs_to_buy} pack{item.packs_to_buy > 1 ? "s" : ""}</Badge>
                                       ) : (
                                         <Badge variant="success" className="font-bold py-2 px-2.5 rounded-lg text-[10px]">Sufficient</Badge>
                                       )}
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
                               </tbody>
                             </table>
@@ -681,7 +678,7 @@ export default function PlannerPage() {
                                 💡 Tip: You can assign these materials to custom categories in the <strong>Inventory</strong> tab.
                               </div>
                             )}
-                          </div>
+                          </DataTableScroll>
                         )}
                       </div>
                     );
@@ -690,51 +687,93 @@ export default function PlannerPage() {
               </CardContent>
             </Card>
 
-            {/* Scaled Recipes */}
-            <Card className="lg:col-span-5 print:border-0 print:shadow-none print:bg-white rounded-3xl border-slate-200 shadow-sm overflow-hidden">
-              <CardHeader className="p-5 sm:p-6 2xl:p-8 border-b border-slate-100 bg-slate-50/50 print:px-0 print:border-0">
-                <div className="flex items-center gap-2">
-                  <ChefHat size={18} className="text-slate-500" />
-                  <CardTitle className="text-base md:text-lg font-heading font-black">Scaled Kitchen Recipe Sheets</CardTitle>
-                </div>
-                <CardDescription className="print:hidden">Cooking directions scaled to batch sizes.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-5 sm:p-6 2xl:p-8 space-y-4 print:px-0">
-                <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible print:pr-0">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {forecast.scaled_recipes.map((recipe: any, idx: number) => (
-                    <div key={idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 print:bg-white print:p-0 print:border-0 print:border-b print:border-slate-100 print:rounded-none print:pb-6 print:mb-6">
-                      
-                      {/* Recipe Title & Batch info */}
-                      <div className="flex justify-between items-start border-b border-slate-200 pb-3 print:border-slate-100">
-                        <div>
-                          <h4 className="font-heading font-black text-sm md:text-base uppercase tracking-wide text-slate-800">{recipe.recipe_name}</h4>
-                          <span className="text-xs text-slate-400 block mt-1 font-mono font-bold">SKU Code: {recipe.target_sku}</span>
+            {/* Production Summary and Scaled Recipes Column */}
+            <div className="lg:col-span-5 space-y-5 print:space-y-0">
+              <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden bg-white print:hidden">
+                <CardHeader className="p-5 bg-slate-50/50 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare size={18} className="text-[#885625]" />
+                    <CardTitle className="text-base font-heading font-black text-slate-800">Production Summary</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs text-slate-500">
+                    Summary of items selected to produce. Ideal for screenshotting.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 space-y-2">
+                  <div className="divide-y divide-slate-100 text-slate-800 font-bold">
+                    {getActiveTargets().map((target) => {
+                      const product = products.find((item) => item.sku === target.sku);
+                      return (
+                        <div key={target.sku} className="flex items-center justify-between py-2.5 text-sm">
+                          <span>{product?.product_name || target.sku} ({product?.size || "N/A"})</span>
+                          <span className="font-mono text-[#885625] font-black shrink-0">{target.quantity} pcs</span>
                         </div>
-                        <div className="text-right">
-                          <Badge variant="info" className="font-bold py-1 px-2.5 rounded-lg text-xs">
-                            {recipe.batches_needed} Batch{recipe.batches_needed !== 1 ? "es" : ""} needed
-                          </Badge>
-                          <span className="text-xs text-slate-500 block mt-1.5 font-bold">Yield: {recipe.scaled_yield} {recipe.yield_unit}</span>
-                        </div>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
 
-                      {/* Recipe table list */}
-                      <div className="grid grid-cols-1 gap-y-2 text-sm font-bold text-slate-650">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {recipe.scaled_ingredients.map((ing: any, i: number) => (
-                          <div key={i} className="flex justify-between items-center py-2 border-b border-slate-100/50">
-                            <span className="text-slate-800 text-base">{ing.raw_ingredient_name || ing.sub_product_name}</span>
-                            <span className="font-mono font-black text-[#885625] text-base">{ing.base_qty} {ing.base_unit}</span>
+              <Card className="print:border-0 print:shadow-none print:bg-white rounded-3xl border-slate-200 shadow-sm overflow-hidden">
+                <CardHeader className="p-5 sm:p-6 2xl:p-8 border-b border-slate-100 bg-slate-50/50 print:px-0 print:border-0">
+                  <div className="flex items-center gap-2">
+                    <ChefHat size={18} className="text-slate-500" />
+                    <CardTitle className="text-base md:text-lg font-heading font-black">Scaled Kitchen Recipe Sheets</CardTitle>
+                  </div>
+                  <CardDescription className="print:hidden">Cooking directions scaled to batch sizes.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-5 sm:p-6 2xl:p-8 space-y-4 print:px-0">
+                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible print:pr-0">
+                    {forecast.scaled_recipes.map((recipe) => {
+                      const targetProduct = products.find((product) => product.sku === recipe.target_sku);
+                      return (
+                        <div key={`${recipe.target_sku}-${recipe.recipe_name}`} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 print:bg-white print:p-0 print:border-0 print:border-b print:border-slate-100 print:rounded-none print:pb-6 print:mb-6">
+                          <div className="flex justify-between items-start border-b border-slate-200 pb-3 print:border-slate-100">
+                            <ProductDisplay
+                              sku={recipe.target_sku}
+                              productName={targetProduct?.product_name || recipe.recipe_name}
+                              category={targetProduct?.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                              size={targetProduct?.size}
+                              variant="compact"
+                              showMissingSize={false}
+                            />
+                            <div className="text-right">
+                              <Badge variant="info" className="font-bold py-1 px-2.5 rounded-lg text-xs">
+                                {recipe.batches_needed} Batch{recipe.batches_needed !== 1 ? "es" : ""} needed
+                              </Badge>
+                              <span className="text-xs text-slate-500 block mt-1.5 font-bold">Yield: {recipe.scaled_yield} {recipe.yield_unit}</span>
+                            </div>
                           </div>
-                        ))}
-                      </div>
 
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                          <div className="grid grid-cols-1 gap-y-2 text-sm font-bold text-slate-650">
+                            {recipe.scaled_ingredients.map((ingredient) => {
+                              const subProduct = ingredient.sub_sku ? products.find((product) => product.sku === ingredient.sub_sku) : null;
+                              return (
+                                <div key={ingredient.id ?? `${ingredient.ingredient_type}-${ingredient.raw_ingredient_id ?? ingredient.sub_sku}`} className="flex min-h-12 items-center justify-between gap-4 border-b border-slate-100/50 py-2">
+                                  {subProduct ? (
+                                    <ProductDisplay
+                                      sku={subProduct.sku}
+                                      productName={subProduct.product_name}
+                                      category={subProduct.category}
+                                      size={subProduct.size}
+                                      variant="compact"
+                                      showIcon={false}
+                                    />
+                                  ) : (
+                                    <span className="text-base text-slate-800">{ingredient.raw_ingredient_name || ingredient.sub_product_name}</span>
+                                  )}
+                                  <span className="shrink-0 font-mono text-base font-black tabular-nums text-[#885625]">{ingredient.base_qty} {ingredient.base_unit}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       )}
@@ -753,12 +792,22 @@ export default function PlannerPage() {
             <div className="space-y-4 font-sans text-sm text-slate-650 leading-relaxed">
               <p className="font-bold text-slate-800 text-base">Are you sure you want to log these targets as completed?</p>
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl max-h-36 overflow-y-auto text-sm font-bold text-slate-700 space-y-2">
-                {getActiveTargets().map((t, idx) => {
+                {getActiveTargets().map((t) => {
                   const p = products.find(prod => prod.sku === t.sku);
                   return (
-                    <div key={idx} className="flex justify-between">
-                      <span className="flex items-center gap-2">{p ? p.product_name : t.sku} <ProductSizeBadge size={p?.size} sku={t.sku} /></span>
-                      <span className="font-mono font-black text-slate-900">{t.quantity} jars</span>
+                    <div key={t.sku} className="flex min-h-12 items-center justify-between gap-4">
+                      <ProductDisplay
+                        sku={t.sku}
+                        productName={p?.product_name || t.sku}
+                        category={p?.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                        size={p?.size}
+                        variant="compact"
+                        showIcon={false}
+                        showMissingSize={false}
+                      />
+                      <span className="shrink-0 font-mono font-black tabular-nums text-slate-900">
+                        {formatProductQuantity(p || { sku: t.sku }, t.quantity)}
+                      </span>
                     </div>
                   );
                 })}

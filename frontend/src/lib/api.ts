@@ -88,6 +88,13 @@ export interface RecipeItemOut extends RecipeItemBase {
   id: number;
   product_name?: string;
   size?: string;
+  raw_ingredient_name?: string | null;
+  sub_product_name?: string | null;
+  calculated_cost: number;
+}
+
+export interface RecipeItemUpdate {
+  base_qty?: number;
 }
 
 export interface RecipeBase {
@@ -106,7 +113,26 @@ export interface RecipeCreate extends RecipeBase {
 export interface RecipeOut extends RecipeBase {
   id: number;
   created_at?: string | null;
+  product_name?: string | null;
+  size?: string | null;
+  cost_override?: number | null;
+  calculated_batch_cost: number;
+  calculated_portion_cost: number;
   ingredients: RecipeItemOut[];
+}
+
+export interface RecipeUpdate extends Omit<RecipeBase, "sku"> {
+  ingredients: RecipeItemCreate[];
+}
+
+export interface RecipeCostDetailsOut extends RecipeOut {
+  product_name: string;
+  size: string;
+  cost_override: number | null;
+  calculated_batch_cost: number;
+  calculated_portion_cost: number;
+  category?: string;
+  selling_price?: number;
 }
 
 export interface ProductionTargetBase {
@@ -170,6 +196,8 @@ export interface ConsignmentItemOut extends ConsignmentItemBase {
   id: number;
   product_name: string;
   size: string;
+  units_sold: number;
+  qty_pulled_out: number;
   efficiency_rate: number;
   food_waste_percentage: number;
   sales_revenue: number;
@@ -408,6 +436,92 @@ export interface DraftPurchaseOrderOut {
   supplier_contact?: string | null;
   items: Array<{ ingredient_name: string; quantity: number; unit: string; subtotal: number }>;
   grand_total: number;
+}
+
+export interface DashboardAnalyticsOut {
+  raw_inventory_value?: number;
+  raw_items_count: number;
+  consignment_partners_count: number;
+  consignment_sales?: number;
+  reseller_sales?: number;
+  market_sales?: number;
+  combined_sales?: number;
+  consignment_net_profit?: number;
+  consignment_efficiency_rate: number;
+  consignment_waste_percentage: number;
+  combined_cogs?: number;
+  combined_net_profit?: number;
+  combined_costing_complete?: boolean;
+}
+
+interface DashboardLowStockBase {
+  name: string;
+  available_stock: number;
+  reorder_level: number;
+  unit: string;
+}
+
+export type DashboardLowStockOut = DashboardLowStockBase & (
+  | {
+      id: number;
+      supplier_id: number | null;
+      item_type: "raw_ingredient";
+    }
+  | {
+      id: string;
+      sku: string;
+      supplier_id: null;
+      item_type: "finished_good";
+    }
+);
+
+export interface DashboardExpiringBatchOut {
+  id: number;
+  raw_ingredient_id: number;
+  ingredient_name: string;
+  expiry_date: string;
+  qty: number;
+  quantity?: number;
+}
+
+export interface DashboardCleaningSummaryOut {
+  total_tasks: number;
+  completed_tasks: number;
+}
+
+export interface DashboardMarginSummaryOut {
+  product_name: string;
+  sku: string;
+  net_margin_pct: number;
+  gross_margin_pct: number;
+}
+
+export interface DashboardCategoryAverageOut {
+  category: string;
+  count: number;
+  avg_price: number;
+  avg_food_cost: number;
+  avg_labor_cost: number;
+  avg_utility_cost: number;
+  avg_net_profit: number;
+  avg_gross_margin_pct: number;
+  avg_net_margin_pct: number;
+}
+
+export interface DashboardSummaryOut {
+  viewer_role: "owner" | "staff";
+  analytics: DashboardAnalyticsOut;
+  low_stock: DashboardLowStockOut[];
+  expiring_batches: DashboardExpiringBatchOut[];
+  today_plan: ProductionPlanOut | null;
+  cleaning_summary: DashboardCleaningSummaryOut;
+  waste_trend: Array<{ date: string; waste_pct: number; partner: string }>;
+  low_margin_products?: CostAnalysisOut[];
+  unpaid_deliveries?: ConsignmentDeliveryOut[];
+  total_unpaid_ar?: number;
+  top_margins?: DashboardMarginSummaryOut[];
+  low_margins?: DashboardMarginSummaryOut[];
+  category_averages?: DashboardCategoryAverageOut[];
 }
 
 export interface ProductionForecastOut {
@@ -798,8 +912,8 @@ export const api = {
   // ----------------------------------------------------
   // GENERAL & ANALYTICS
   // ----------------------------------------------------
-  getDashboardAnalytics: (): Promise<any> => fetchJson("/dashboard/analytics"),
-  getDashboardSummary: (): Promise<any> => fetchJson("/dashboard/summary"),
+  getDashboardAnalytics: (): Promise<DashboardAnalyticsOut> => fetchJson("/dashboard/analytics"),
+  getDashboardSummary: (): Promise<DashboardSummaryOut> => fetchJson("/dashboard/summary"),
 
   // ----------------------------------------------------
   // PRODUCT SKUs
@@ -839,9 +953,9 @@ export const api = {
   // COSTING
   // ----------------------------------------------------
   recalculateAllCosts: (): Promise<{ message: string }> => fetchJson("/costing/recalculate-all", { method: "POST" }),
-  getSkuCostDetails: (sku: string): Promise<any> => fetchJson(`/costing/sku/${sku}`),
-  getAllRecipes: (): Promise<any[]> => fetchJson("/costing/recipes"),
-  updateSkuRecipe: (sku: string, data: any): Promise<any> =>
+  getSkuCostDetails: (sku: string): Promise<RecipeCostDetailsOut> => fetchJson(`/costing/sku/${sku}`),
+  getAllRecipes: (): Promise<RecipeOut[]> => fetchJson("/costing/recipes"),
+  updateSkuRecipe: (sku: string, data: RecipeUpdate): Promise<RecipeOut> =>
     fetchJson(`/costing/sku/${sku}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -850,7 +964,7 @@ export const api = {
     fetchJson("/costing/analysis").then((rows: CostAnalysisOut[]) =>
       rows.filter(isCurrentLineupProduct)
     ),
-  updateRecipeItem: (itemId: number, data: any): Promise<any> => 
+  updateRecipeItem: (itemId: number, data: RecipeItemUpdate): Promise<RecipeItemOut> =>
     fetchJson(`/costing/recipe-items/${itemId}`, {
       method: "PUT",
       body: JSON.stringify(data),

@@ -1,17 +1,34 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+ 
 
 import React, { useEffect, useState } from "react";
 import { api, type ConsignmentDeliveryOut, type ConsignmentPartnerOut, type ProductSKUOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import { getProductBusinessCategory, BUSINESS_CATEGORIES, getSizeBadgeStyle } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatDate,
+  formatProductQuantity,
+  getProductBusinessCategory,
+  isCurrentLineupProduct,
+} from "@/lib/utils";
+import { InventoryChecklist } from "@/components/inventory/InventoryChecklist";
+import { ProductDisplay } from "@/components/ui/ProductDisplay";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  DataTableScroll,
+  TableCell,
+  TableHeaderCell,
+  TableHeaderRow,
+  TableRow,
+} from "@/components/ui/DataTable";
+
 import { 
   Truck, 
   RefreshCw, 
   Calendar, 
   FileText, 
   Plus, 
-  CheckCircle2, 
-  AlertCircle,
   Save,
   Trash2,
   Sparkles,
@@ -22,7 +39,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Modal, PromptModal, ConfirmationModal } from "@/components/ui/Modal";
 
 export default function ConsignmentPage() {
@@ -125,7 +141,18 @@ export default function ConsignmentPage() {
     }
   };
 
+  const fetchProducts = () => {
+    api.getProducts().then(res => {
+      const filtered = (res || []).filter((p) => p.sku !== "SKU" && p.is_active !== false && isCurrentLineupProduct(p));
+      setProducts(filtered);
+      if (filtered.length > 0) {
+        setNewSku(filtered[0].sku);
+      }
+    }).catch(console.error);
+  };
+
   useEffect(() => {
+
     try {
       const cached = localStorage.getItem("hh_cache_consignment_partners");
       if (cached) {
@@ -144,13 +171,7 @@ export default function ConsignmentPage() {
       fetchPartners(false);
     }
 
-    api.getProducts().then(res => {
-      const filtered = (res || []).filter((p) => p.sku !== "SKU" && p.is_active !== false);
-      setProducts(filtered);
-      if (filtered.length > 0) {
-        setNewSku(filtered[0].sku);
-      }
-    }).catch(console.error);
+    fetchProducts();
 
     const timer = window.setTimeout(() => {
       setUserRole(localStorage.getItem("hh_user_role") || "staff");
@@ -256,6 +277,8 @@ export default function ConsignmentPage() {
       fetchDeliveries(selectedPartnerId, 0, true);
       setOffset(0);
       fetchPartners();
+      fetchProducts();
+
     } catch (err: unknown) {
       alert(`Error logging delivery receipt: ${getErrorMessage(err)}`);
     }
@@ -275,8 +298,8 @@ export default function ConsignmentPage() {
       alert("Store successfully deactivated.");
       fetchPartners();
       setIsConfirmDeactivateOpen(false);
-    } catch (err: any) {
-      alert(`Error deactivating store: ${err.message}`);
+    } catch (err) {
+      alert(`Error deactivating store: ${getErrorMessage(err)}`);
     } finally {
       setActionLoading(false);
     }
@@ -364,7 +387,9 @@ export default function ConsignmentPage() {
                 return (
                   <button
                     key={p.id}
+                    type="button"
                     onClick={() => setSelectedPartnerId(p.id)}
+                    aria-pressed={isSelected}
                     className={`w-full text-left px-4 py-3.5 rounded-2xl text-sm font-heading font-bold flex flex-col justify-between transition-all relative border-2 cursor-pointer ${
                       isSelected 
                         ? "bg-[#885625]/5 border-[#885625] text-[#2d1f0e] shadow-3xs" 
@@ -390,7 +415,9 @@ export default function ConsignmentPage() {
                   return (
                     <button
                       key={p.id}
+                      type="button"
                       onClick={() => setSelectedPartnerId(p.id)}
+                      aria-pressed={isSelected}
                       className={`w-full text-left px-4 py-3.5 rounded-2xl text-sm font-heading font-bold flex flex-col justify-between transition-all relative border-2 cursor-pointer opacity-75 ${
                         isSelected 
                           ? "bg-slate-100 border-slate-350 text-slate-800 shadow-3xs" 
@@ -416,14 +443,14 @@ export default function ConsignmentPage() {
             <div className="space-y-6">
               
               {/* Active partner highlights / KPI cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <Card className="border-l-8 border-l-primary bg-primary-light/5 shadow-xs rounded-2xl">
                   <CardContent className="p-6 flex justify-between items-center">
                     <div>
                       <span className="text-xs text-slate-500 font-extrabold uppercase tracking-wider block">Unsettled Consignment Value</span>
                       <p className="text-xs text-slate-400 font-semibold mt-0.5 leading-normal">Estimated wholesale value of jar products currently on shelves.</p>
                     </div>
-                    <span className="text-2xl font-black font-mono text-primary ml-4 shrink-0">₱{totalUnsettledValue.toLocaleString()}</span>
+                    <span className="text-2xl font-black font-mono text-primary ml-4 shrink-0">{formatCurrency(totalUnsettledValue)}</span>
                   </CardContent>
                 </Card>
 
@@ -472,8 +499,8 @@ export default function ConsignmentPage() {
                               });
                               alert("Store successfully reactivated!");
                               fetchPartners();
-                            } catch (err: any) {
-                              alert(`Error reactivating store: ${err.message}`);
+                            } catch (err) {
+                              alert(`Error reactivating store: ${getErrorMessage(err)}`);
                             }
                           }}
                           variant="primary"
@@ -527,7 +554,7 @@ export default function ConsignmentPage() {
                         const predictedSettlementDate = new Date(deliveryDateObj.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                         
                         // Overdue check (if unpaid and past 15 days from delivery date)
-                        const todayDateObj = new Date("2026-07-11"); // Constant today reference
+                        const todayDateObj = new Date();
                         const timeDiff = todayDateObj.getTime() - deliveryDateObj.getTime();
                         const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
                         const isOverdue = !delivery.is_paid && diffDays > 15;
@@ -541,7 +568,7 @@ export default function ConsignmentPage() {
                                 <span className="flex items-center gap-2">
                                   <Calendar size={18} className="text-[#885625] shrink-0" /> 
                                   <span>Delivery Date:</span>
-                                  <strong className="text-slate-850 text-base font-mono">{delivery.delivery_date}</strong>
+                                  <strong className="text-slate-850 text-base font-mono">{formatDate(delivery.delivery_date)}</strong>
                                 </span>
                                 <span className="flex items-center gap-2">
                                   <FileText size={18} className="text-[#885625] shrink-0" /> 
@@ -561,14 +588,18 @@ export default function ConsignmentPage() {
                                         }}
                                       />
                                       <button
+                                        type="button"
                                         onClick={() => handleSaveDR(delivery.id)}
-                                        className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer"
+                                        aria-label="Save DR number"
+                                        className="inline-flex h-10 w-10 items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                                       >
                                         <Check size={14} className="stroke-[3]" />
                                       </button>
                                       <button
+                                        type="button"
                                         onClick={() => setEditingDrId(null)}
-                                        className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl cursor-pointer"
+                                        aria-label="Cancel editing DR number"
+                                        className="inline-flex h-10 w-10 items-center justify-center bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                                       >
                                         <X size={14} className="stroke-[3]" />
                                       </button>
@@ -579,11 +610,13 @@ export default function ConsignmentPage() {
                                         {delivery.dr_number || "N/A"}
                                       </strong>
                                       <button
+                                        type="button"
                                         onClick={() => {
                                           setEditingDrId(delivery.id);
                                           setEditingDrVal(delivery.dr_number || "");
                                         }}
-                                        className="text-[#885625] hover:text-[#cfaf45] p-1.5 hover:bg-slate-100 rounded-lg transition-all cursor-pointer opacity-80 md:opacity-0 group-hover:opacity-100"
+                                        aria-label="Edit DR number"
+                                        className="inline-flex h-10 w-10 items-center justify-center text-[#885625] hover:text-[#cfaf45] hover:bg-slate-100 rounded-lg transition-all cursor-pointer opacity-80 md:opacity-0 group-hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                                         title="Edit DR Number"
                                       >
                                         <Edit3 size={14} />
@@ -597,27 +630,29 @@ export default function ConsignmentPage() {
                                   <span className="flex items-center gap-2 text-slate-500 font-semibold bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">
                                     <Clock size={14} className="text-primary shrink-0" />
                                     <span>Predicted Settlement: </span>
-                                    <strong className="text-slate-800 font-mono">{predictedSettlementDate}</strong>
+                                    <strong className="text-slate-800 font-mono">{formatDate(predictedSettlementDate)}</strong>
                                   </span>
                                 )}
                               </div>
                               
-                              <div className="flex items-center gap-3">
+                              <div className="flex flex-wrap items-center gap-3">
                                 {isOverdue && (
-                                  <Badge variant="danger" className="text-xs py-1.5 px-3 rounded-full animate-pulse bg-rose-150 border-rose-300 text-rose-800 font-black uppercase">
-                                    ⚠️ OVERDUE (Outstanding {diffDays} Days)
-                                  </Badge>
+                                  <StatusBadge
+                                    status="overdue"
+                                    label={`Overdue (${diffDays} days outstanding)`}
+                                    className="rounded-full px-3 py-1.5 text-xs font-black uppercase motion-safe:animate-pulse"
+                                  />
                                 )}
 
                                 {delivery.is_paid ? (
-                                  <Badge variant="success" className="text-sm py-1.5 px-3 rounded-full">
-                                    <CheckCircle2 size={14} className="mr-1.5 inline" /> Paid on {delivery.payment_date}
-                                  </Badge>
+                                  <StatusBadge
+                                    status="paid"
+                                    label={`Paid on ${formatDate(delivery.payment_date)}`}
+                                    className="rounded-full px-3 py-1.5 text-sm"
+                                  />
                                 ) : (
-                                  <div className="flex items-center gap-3">
-                                    <Badge variant="danger" className="text-sm py-1.5 px-3 rounded-full">
-                                      <AlertCircle size={14} className="mr-1.5 inline" /> Unsettled
-                                    </Badge>
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    <StatusBadge status="unpaid" label="Unsettled" className="rounded-full px-3 py-1.5 text-sm" />
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -632,80 +667,92 @@ export default function ConsignmentPage() {
                             </div>
 
                             {/* Desktop View Table (Larger and wider columns) */}
-                            <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
-                              <table className="w-full text-left border-collapse text-sm text-slate-700">
+                            <DataTableScroll label={`Shipment items for ${delivery.dr_number || "draft DR"}`} className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl">
+                              <table className="w-full min-w-[1120px] text-left border-collapse text-sm text-slate-700">
                                 <thead>
-                                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wider text-xs">
-                                    <th className="px-6 py-4">Finished SKU</th>
-                                    <th className="px-6 py-4 text-right">Store SRP</th>
-                                    <th className="px-6 py-4 text-right">Wholesale Price</th>
-                                    <th className="px-6 py-4 text-center">QTY Dispatched</th>
-                                    <th className="px-6 py-4 text-center">Units Sold</th>
-                                    <th className="px-6 py-4 text-center">Returns</th>
-                                    <th className="px-6 py-4 text-right">Sell-thru</th>
-                                    <th className="px-6 py-4 text-right">Net Sales</th>
-                                    <th className="px-6 py-4 text-right">Save</th>
-                                  </tr>
+                                  <TableHeaderRow>
+                                    <TableHeaderCell>Finished SKU</TableHeaderCell>
+                                    <TableHeaderCell align="right">Store SRP</TableHeaderCell>
+                                    <TableHeaderCell align="right">Wholesale Price</TableHeaderCell>
+                                    <TableHeaderCell align="center">Qty Dispatched</TableHeaderCell>
+                                    <TableHeaderCell align="center">Units Sold</TableHeaderCell>
+                                    <TableHeaderCell align="center">Returns</TableHeaderCell>
+                                    <TableHeaderCell align="right">Sell-through</TableHeaderCell>
+                                    <TableHeaderCell align="right">Net Sales</TableHeaderCell>
+                                    <TableHeaderCell align="right">Save</TableHeaderCell>
+                                  </TableHeaderRow>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                                   {delivery.items.map((item) => {
                                     const isEditing = editSold[item.id] !== undefined || editPulled[item.id] !== undefined;
                                     const soldVal = editSold[item.id] !== undefined ? editSold[item.id] : item.units_sold;
                                     const pulledVal = editPulled[item.id] !== undefined ? editPulled[item.id] : item.qty_pulled_out;
+                                    const matchedProduct = products.find((product) => product.sku === item.sku);
+                                    const identity = {
+                                      sku: item.sku,
+                                      product_name: item.product_name,
+                                      category: matchedProduct?.category || getProductBusinessCategory(item),
+                                      size: item.size,
+                                    };
 
                                     return (
-                                      <tr key={item.id} className="hover:bg-slate-50/20 transition-colors">
-                                        <td className="px-6 py-4">
-                                          <span className="font-black text-slate-850 block text-base">{item.product_name}</span>
-                                          <div className="flex items-center gap-1.5 mt-1">
-                                            <span className={`text-[10px] font-black font-mono px-1.5 py-0.5 rounded ${getSizeBadgeStyle(item.size)}`}>{item.size}</span>
-                                            <span className="font-mono text-xs text-slate-400">{item.sku}</span>
-                                          </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-mono text-slate-500">₱{item.store_price_snapshot.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-right font-mono font-bold text-slate-850">₱{item.reseller_price_snapshot.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-center font-black text-slate-900 text-base">{item.qty_delivered}</td>
+                                      <TableRow key={item.id}>
+                                        <TableCell>
+                                          <ProductDisplay
+                                            sku={identity.sku}
+                                            productName={identity.product_name}
+                                            category={identity.category}
+                                            size={identity.size}
+                                          />
+                                        </TableCell>
+                                        <TableCell align="right" className="font-mono text-slate-500">{formatCurrency(item.store_price_snapshot)}</TableCell>
+                                        <TableCell align="right" className="font-mono font-bold text-slate-850">{formatCurrency(item.reseller_price_snapshot)}</TableCell>
+                                        <TableCell align="center" className="font-black text-slate-900">{formatProductQuantity(identity, item.qty_delivered)}</TableCell>
                                         
                                         {/* SOLD INPUT */}
-                                        <td className="px-6 py-4 text-center">
+                                        <TableCell align="center">
                                           {delivery.is_paid ? (
-                                            <span className="font-bold text-slate-800">{item.units_sold}</span>
+                                            <span className="font-bold text-slate-800">{formatProductQuantity(identity, item.units_sold ?? 0)}</span>
                                           ) : (
                                             <input
                                               type="number"
+                                              inputMode="numeric"
+                                              aria-label={`Units sold for ${item.product_name}`}
                                               min={0}
                                               max={item.qty_delivered}
                                               value={soldVal}
                                               onChange={(e) => setEditSold({ ...editSold, [item.id]: e.target.value })}
-                                              className="w-20 h-10 text-center font-mono font-black text-base border-2 border-slate-200 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary/20"
+                                              className="quantity-input w-24 h-10 text-center font-mono font-black text-base border-2 border-slate-200 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary/20"
                                             />
                                           )}
-                                        </td>
+                                        </TableCell>
 
                                         {/* RETURNS INPUT */}
-                                        <td className="px-6 py-4 text-center">
+                                        <TableCell align="center">
                                           {delivery.is_paid ? (
-                                            <span className="font-bold text-slate-400">{item.qty_pulled_out}</span>
+                                            <span className="font-bold text-slate-500">{formatProductQuantity(identity, item.qty_pulled_out ?? 0)}</span>
                                           ) : (
                                             <input
                                               type="number"
+                                              inputMode="numeric"
+                                              aria-label={`Returns for ${item.product_name}`}
                                               min={0}
                                               max={item.qty_delivered}
                                               value={pulledVal}
                                               onChange={(e) => setEditPulled({ ...editPulled, [item.id]: e.target.value })}
-                                              className="w-20 h-10 text-center font-mono font-black text-base border-2 border-slate-200 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary/20"
+                                              className="quantity-input w-24 h-10 text-center font-mono font-black text-base border-2 border-slate-200 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary/20"
                                             />
                                           )}
-                                        </td>
+                                        </TableCell>
 
-                                        <td className="px-6 py-4 text-right font-bold">
+                                        <TableCell align="right" className="font-bold">
                                           <span className={item.efficiency_rate >= 70 ? "text-emerald-600" : "text-amber-600"}>
                                             {item.efficiency_rate}%
                                           </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-mono font-black text-slate-900 text-base">₱{item.sales_revenue.toFixed(2)}</td>
+                                        </TableCell>
+                                        <TableCell align="right" className="font-mono font-black text-slate-900">{formatCurrency(item.sales_revenue)}</TableCell>
                                         
-                                        <td className="px-6 py-4 text-right">
+                                        <TableCell align="right">
                                           {isEditing && !delivery.is_paid && (
                                             <Button
                                               onClick={() => handleUpdateItem(item.id)}
@@ -721,13 +768,13 @@ export default function ConsignmentPage() {
                                               )}
                                             </Button>
                                           )}
-                                        </td>
-                                      </tr>
+                                        </TableCell>
+                                      </TableRow>
                                     );
                                   })}
                                 </tbody>
                               </table>
-                            </div>
+                            </DataTableScroll>
 
                             {/* Mobile View Card items */}
                             <div className="md:hidden space-y-4">
@@ -735,34 +782,42 @@ export default function ConsignmentPage() {
                                 const isEditing = editSold[item.id] !== undefined || editPulled[item.id] !== undefined;
                                 const soldVal = editSold[item.id] !== undefined ? editSold[item.id] : item.units_sold;
                                 const pulledVal = editPulled[item.id] !== undefined ? editPulled[item.id] : item.qty_pulled_out;
+                                const matchedProduct = products.find((product) => product.sku === item.sku);
+                                const identity = {
+                                  sku: item.sku,
+                                  product_name: item.product_name,
+                                  category: matchedProduct?.category || getProductBusinessCategory(item),
+                                  size: item.size,
+                                };
 
                                 return (
                                   <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <span className="font-black text-slate-800 block text-base">{item.product_name}</span>
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                          <span className={`text-[10px] font-black font-mono px-1.5 py-0.5 rounded ${getSizeBadgeStyle(item.size)}`}>{item.size}</span>
-                                          <span className="font-mono text-xs text-slate-400">{item.sku}</span>
-                                        </div>
+                                    <div className="flex justify-between items-start gap-4">
+                                      <div className="min-w-0 flex-1">
+                                        <ProductDisplay
+                                          sku={identity.sku}
+                                          productName={identity.product_name}
+                                          category={identity.category}
+                                          size={identity.size}
+                                          variant="compact"
+                                        />
                                       </div>
-                                      <div className="text-right">
-                                        <span className="text-base font-black text-slate-900 font-mono">₱{item.sales_revenue.toFixed(2)}</span>
+                                      <div className="shrink-0 text-right">
+                                        <span className="text-base font-black text-slate-900 font-mono">{formatCurrency(item.sales_revenue)}</span>
                                         <span className="text-xs text-slate-400 block mt-0.5 font-bold">Revenue</span>
                                       </div>
                                     </div>
-
                                     <div className="grid grid-cols-3 gap-3 border-y border-slate-200 py-3 text-xs text-slate-555 font-bold">
                                       <div>
-                                        <span className="text-slate-450 block text-[10px] uppercase tracking-wider mb-1">Wholesale Price</span>
-                                        <span className="font-mono text-slate-700 text-sm">₱{item.reseller_price_snapshot.toFixed(2)}</span>
+                                        <span className="text-slate-455 block text-[10px] uppercase tracking-wider mb-1">Wholesale Price</span>
+                                        <span className="font-mono text-slate-700 text-sm">{formatCurrency(item.reseller_price_snapshot)}</span>
                                       </div>
                                       <div className="text-center">
                                         <span className="text-slate-455 block text-[10px] uppercase tracking-wider mb-1">Dispatched</span>
-                                        <span className="text-slate-850 font-black text-sm">{item.qty_delivered} jars</span>
+                                        <span className="text-slate-850 font-black text-sm">{formatProductQuantity(identity, item.qty_delivered)}</span>
                                       </div>
                                       <div className="text-right">
-                                        <span className="text-slate-450 block text-[10px] uppercase tracking-wider mb-1">Sell-Thru</span>
+                                        <span className="text-slate-455 block text-[10px] uppercase tracking-wider mb-1">Sell-Thru</span>
                                         <span className="text-primary font-black text-sm">{item.efficiency_rate}%</span>
                                       </div>
                                     </div>
@@ -770,32 +825,37 @@ export default function ConsignmentPage() {
                                     <div className="flex items-center justify-between gap-4">
                                       {delivery.is_paid ? (
                                         <div className="flex justify-between w-full text-xs text-slate-500 font-bold">
-                                          <span>Sold: <strong className="text-slate-850 text-sm">{item.units_sold} jars</strong></span>
-                                          <span>Returns: <strong className="text-slate-850 text-sm">{item.qty_pulled_out} jars</strong></span>
+                                          <span>Sold: <strong className="text-slate-850 text-sm">{formatProductQuantity(identity, item.units_sold ?? 0)}</strong></span>
+                                          <span>Returns: <strong className="text-slate-850 text-sm">{formatProductQuantity(identity, item.qty_pulled_out ?? 0)}</strong></span>
                                         </div>
                                       ) : (
                                         <>
                                           <div className="flex items-center gap-4 flex-1 min-w-0">
+
                                             <div className="flex-1">
-                                              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Sold</label>
+                                              <label htmlFor={`mobile-sold-${item.id}`} className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Sold</label>
                                               <input
+                                                id={`mobile-sold-${item.id}`}
                                                 type="number"
+                                                inputMode="numeric"
                                                 min={0}
                                                 max={item.qty_delivered}
                                                 value={soldVal}
                                                 onChange={(e) => setEditSold({ ...editSold, [item.id]: e.target.value })}
-                                                className="w-full h-10 text-center font-mono font-black text-base bg-white border border-slate-200 rounded-xl"
+                                                className="quantity-input w-full min-w-20 h-10 text-center font-mono font-black text-base bg-white border border-slate-200 rounded-xl"
                                               />
                                             </div>
                                             <div className="flex-1">
-                                              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Returns</label>
+                                              <label htmlFor={`mobile-returns-${item.id}`} className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Returns</label>
                                               <input
+                                                id={`mobile-returns-${item.id}`}
                                                 type="number"
+                                                inputMode="numeric"
                                                 min={0}
                                                 max={item.qty_delivered}
                                                 value={pulledVal}
                                                 onChange={(e) => setEditPulled({ ...editPulled, [item.id]: e.target.value })}
-                                                className="w-full h-10 text-center font-mono font-black text-base bg-white border border-slate-200 rounded-xl"
+                                                className="quantity-input w-full min-w-20 h-10 text-center font-mono font-black text-base bg-white border border-slate-200 rounded-xl"
                                               />
                                             </div>
                                           </div>
@@ -806,6 +866,7 @@ export default function ConsignmentPage() {
                                               disabled={updatingItemId === item.id}
                                               size="sm"
                                               variant="primary"
+                                              aria-label={`Save sold and return quantities for ${item.product_name}`}
                                               className="h-10 w-12 shrink-0 flex items-center justify-center p-0 rounded-xl"
                                             >
                                               {updatingItemId === item.id ? (
@@ -860,7 +921,7 @@ export default function ConsignmentPage() {
             setDeliveryItems([]);
           }}
           title="Log New Dispatch Shipment"
-          size="md"
+          size="3xl"
         >
           <div className="space-y-6 text-sm font-semibold text-slate-600">
             
@@ -907,116 +968,51 @@ export default function ConsignmentPage() {
               </div>
             </div>
 
-            {/* Select Sku tool card */}
-            <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-4">
-              <span className="text-xs text-slate-500 font-black uppercase tracking-wider block">Select finished goods SKU:</span>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <select
-                  value={newSku}
-                  onChange={(e) => setNewSku(e.target.value)}
-                  className="flex-1 text-sm font-black bg-white"
-                >
-                  {BUSINESS_CATEGORIES.map(cat => {
-                    const catProds = products.filter(p => getProductBusinessCategory(p) === cat);
-                    if (catProds.length === 0) return null;
-                    return (
-                      <optgroup key={cat} label={cat}>
-                        {catProds.map(p => (
-                          <option key={p.sku} value={p.sku}>
-                            {p.sku} - {p.product_name} ({p.warehouse_stock} available in main warehouse)
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-                </select>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    value={newQty}
-                    onChange={(e) => setNewQty(parseInt(e.target.value) || 1)}
-                    className="w-24 h-12 text-center font-mono font-black text-sm bg-white"
-                  />
-                  <Button
-                    size="md"
-                    variant="outline"
-                    className="h-12 border-slate-300 hover:bg-slate-100 px-4 font-black"
-                    onClick={handleAddDeliveryItem}
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
+            {/* Dispatch checklist using shared InventoryChecklist */}
+            <div className="space-y-4">
+              <span className="text-xs text-slate-500 font-black uppercase tracking-wider block">Reserve Inventory Allocation</span>
+              <InventoryChecklist
+                products={products as any[]}
+                allocations={deliveryItems.map(item => ({
+                  sku: item.sku,
+                  quantity: item.target_qty
+                }))}
+                setAllocations={(newAllocs) => {
+                  setDeliveryItems(newAllocs.map(alloc => ({
+                    sku: alloc.sku,
+                    target_qty: alloc.quantity,
+                    outlet: "Consignment"
+                  })));
+                }}
+              />
             </div>
 
-            {/* Added list */}
-            {deliveryItems.length > 0 ? (
-              <div className="space-y-4 animate-fade-in">
-                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs">
-                  <table className="w-full text-left border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100 text-slate-455 font-bold uppercase tracking-wider text-[11px]">
-                        <th className="px-5 py-3">Finished SKU</th>
-                        <th className="px-5 py-3 text-right">Quantity</th>
-                        <th className="px-5 py-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-bold text-slate-750">
-                      {deliveryItems.map((item, idx) => {
-                        const matchedProd = products.find(p => p.sku === item.sku);
-                        return (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="px-5 py-3 font-mono">
-                              <span className="text-slate-800 font-black block text-sm">{matchedProd ? matchedProd.product_name : item.sku}</span>
-                              <span className="text-xs text-slate-400 font-mono font-bold">{item.sku}</span>
-                            </td>
-                            <td className="px-5 py-3 text-right font-mono font-black text-[#885625] text-base">{item.target_qty} jars</td>
-                            <td className="px-5 py-3 text-right">
-                              <button
-                                onClick={() => handleRemoveDeliveryItem(idx)}
-                                className="text-slate-400 hover:text-danger p-2 hover:bg-slate-100 rounded-xl cursor-pointer transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex justify-end gap-3 border-t border-slate-100 pt-6 mt-8">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-12 px-6"
-                    onClick={() => {
-                      setShowNewDelivery(false);
-                      setDeliveryItems([]);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="h-12 px-6 font-bold"
-                    onClick={handleSubmitDelivery}
-                  >
-                    Confirm & Deduct Warehouse Stock
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center text-slate-400 italic">
-                Your dispatch checklist is empty. Use recommendations above to prefill or select a SKU manually.
-              </div>
-            )}
+            <div className="flex justify-end gap-3 border-t border-slate-100 pt-6 mt-8">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-6"
+                onClick={() => {
+                  setShowNewDelivery(false);
+                  setDeliveryItems([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                className="h-12 px-6 font-bold"
+                onClick={handleSubmitDelivery}
+                disabled={deliveryItems.length === 0}
+              >
+                Confirm & Deduct Warehouse Stock
+              </Button>
+            </div>
           </div>
         </Modal>
       )}
+
 
       {/* 4. SETTLE CONSIGNMENT PAYMENT MODAL */}
       <PromptModal

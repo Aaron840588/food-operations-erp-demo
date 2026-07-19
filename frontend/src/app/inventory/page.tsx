@@ -6,6 +6,7 @@ import { Package, RefreshCw, AlertTriangle, CalendarClock, TrendingDown, Warehou
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ProductSizeBadge } from "@/components/ui/ProductSizeBadge";
+import { isCurrentLineupProduct } from "@/lib/utils";
 
 // Sub-components
 import StockList from "@/components/inventory/StockList";
@@ -272,6 +273,7 @@ export default function InventoryPage() {
     { id: "warehouses", label: "Warehouses", icon: Warehouse },
     { id: "audit", label: "Audit Log", icon: ScrollText }
   ] as const;
+  const currentProducts = products.filter(isCurrentLineupProduct);
 
   return (
     <div className="space-y-6 flex flex-col">
@@ -301,13 +303,15 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="scroll-fade-x flex gap-1 whitespace-nowrap bg-white/70 p-1.5 rounded-2xl border border-slate-200" role="tablist" aria-label="Inventory views">
+      <div className="scroll-fade-x flex gap-1 overflow-x-auto whitespace-nowrap bg-white/70 p-1.5 rounded-2xl border border-slate-200" role="tablist" aria-label="Inventory views">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             role="tab"
             aria-selected={activeTab === tab.id}
+            aria-controls={`inventory-panel-${tab.id}`}
+            id={`inventory-tab-${tab.id}`}
             className={`inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm font-bold ${
               activeTab === tab.id
                 ? "bg-[#885625]/10 text-primary font-black"
@@ -320,7 +324,12 @@ export default function InventoryPage() {
       </div>
 
       {/* Tab Panels */}
-      <div className="flex-1 relative">
+      <div
+        id={`inventory-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`inventory-tab-${activeTab}`}
+        className="flex-1 relative"
+      >
         {tabLoading && (
           <div className="absolute inset-0 bg-white/80 z-40 flex flex-col items-center justify-center rounded-2xl min-h-[40vh] gap-3">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -330,7 +339,7 @@ export default function InventoryPage() {
 
         {activeTab === "stocks" && (
           <StockList
-            products={products}
+            products={currentProducts}
             ingredients={ingredients}
             isOwner={userRole === "owner"}
             onRefresh={handleRefresh}
@@ -352,7 +361,7 @@ export default function InventoryPage() {
             warehouses={warehouses}
             warehouseStocks={warehouseStocks}
             ingredients={ingredients}
-            products={products}
+            products={currentProducts}
             onRefresh={handleRefresh}
           />
         )}
@@ -384,7 +393,7 @@ export default function InventoryPage() {
           size="md"
         >
           <div className="space-y-5 text-sm font-semibold text-slate-600">
-            <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4">
+            <div className="grid grid-cols-1 gap-4 border-b border-slate-100 pb-4 sm:grid-cols-2">
               <div>
                 <span className="text-xs text-slate-400 font-bold uppercase block">SKU Code</span>
                 <span className="font-mono font-black text-slate-800 text-lg mt-0.5 block">{editingProduct.sku}</span>
@@ -405,7 +414,7 @@ export default function InventoryPage() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="text-xs text-slate-450 font-bold uppercase tracking-wider block mb-1.5">Retail SRP (₱)</label>
                 <input
@@ -435,7 +444,7 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs text-slate-455 font-bold uppercase tracking-wider block mb-1.5">Shelf Life</label>
                 <input
@@ -569,7 +578,7 @@ export default function InventoryPage() {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Brand Name</label>
                 <input
@@ -590,8 +599,8 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-2">
                 <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Package Price (₱)</label>
                 <input
                   type="number"
@@ -611,7 +620,7 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Unit (g/pcs)</label>
                 <input
@@ -621,7 +630,7 @@ export default function InventoryPage() {
                   className="w-full font-mono text-base font-bold text-slate-800"
                 />
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className="text-xs text-slate-455 font-bold uppercase block mb-1.5">Safety Stock Limit</label>
                 <input
                   type="number"

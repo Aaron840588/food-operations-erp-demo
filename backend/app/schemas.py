@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime, date
 
 # ----------------------------------------------------
@@ -394,6 +394,18 @@ class CleaningTaskOut(CleaningTaskBase):
         from_attributes = True
 
 
+class CleaningTaskCreate(BaseModel):
+    task_name: str
+    frequency: Optional[str] = 'Daily'
+
+
+class MaintenanceAssetCreate(BaseModel):
+    area: str
+    item_name: str
+    style_or_kind: Optional[str] = None
+
+
+
 # ----------------------------------------------------
 # DYNAMIC OVERHEAD & GIFT SET SCHEMAS
 # ----------------------------------------------------
@@ -572,6 +584,62 @@ class IngredientBatchOut(IngredientBatchBase):
 
 
 # ----------------------------------------------------
+# TIMESHEETS
+# ----------------------------------------------------
+class TimesheetManualCreate(BaseModel):
+    client_reference: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9:_-]+$")
+    work_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    clock_in: datetime
+    clock_out: Optional[datetime] = None
+    employee_name: Optional[str] = Field(default=None, max_length=100)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+    proof_image_data: str = Field(min_length=32, max_length=4_000_000)
+    proof_image_type: str = Field(pattern=r"^image/(jpeg|png|webp)$")
+
+
+class TimesheetImportRow(BaseModel):
+    values: Dict[str, str]
+
+
+class TimesheetImportCreate(BaseModel):
+    rows: List[TimesheetImportRow] = Field(min_length=1, max_length=20_000)
+
+
+class TimesheetReviewUpdate(BaseModel):
+    review_status: Literal["Approved", "Rejected"]
+
+
+class TimesheetEntryOut(BaseModel):
+    id: int
+    employee_user_id: Optional[int] = None
+    employee_name: str
+    machine_employee_id: Optional[str] = None
+    work_date: str
+    clock_in: Optional[datetime] = None
+    clock_out: Optional[datetime] = None
+    source: str
+    review_status: str
+    has_proof: bool = False
+    notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TimesheetPage(BaseModel):
+    items: List[TimesheetEntryOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class TimesheetProofOut(BaseModel):
+    data_url: str
+    mime_type: str
+
+
+# ----------------------------------------------------
 # MARKET EVENT SCHEMAS
 # ----------------------------------------------------
 class MarketEventAllocationBase(BaseModel):
@@ -582,6 +650,12 @@ class MarketEventAllocationBase(BaseModel):
 
 class MarketEventAllocationCreate(MarketEventAllocationBase):
     quantity: int = Field(gt=0)
+    wasted_quantity: Optional[int] = 0
+    waste_reason: Optional[str] = ""
+
+class MarketEventAllocationUpdate(BaseModel):
+    sku: str = Field(min_length=1)
+    quantity: int
     wasted_quantity: Optional[int] = 0
     waste_reason: Optional[str] = ""
 
@@ -615,6 +689,8 @@ class MarketEventBase(BaseModel):
 
 class MarketEventCreate(MarketEventBase):
     allocations: List[MarketEventAllocationCreate]
+    recurrence: Optional[str] = "none"
+    recurrence_count: Optional[int] = 1
 
 class MarketEventUpdate(BaseModel):
     name: Optional[str] = None
@@ -623,7 +699,7 @@ class MarketEventUpdate(BaseModel):
     staff_assigned: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[MarketEventStatus] = None
-    allocations: Optional[List[MarketEventAllocationCreate]] = None
+    allocations: Optional[List[Union[MarketEventAllocationCreate, MarketEventAllocationUpdate]]] = None
     initial_cash_balance: Optional[float] = None
     actual_closing_cash: Optional[float] = None
     cash_adjustments: Optional[float] = None

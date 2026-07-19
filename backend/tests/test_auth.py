@@ -1,5 +1,8 @@
+import os
 import unittest
 from datetime import timedelta
+
+os.environ.setdefault("JWT_SECRET", "test-only-jwt-secret-at-least-32-bytes")
 
 from app import auth
 from app.routers import market_events

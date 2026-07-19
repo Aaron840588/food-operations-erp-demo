@@ -72,3 +72,85 @@ def update_maintenance_item(item_id: int, payload: schemas.MaintenanceAssetBase,
     db.commit()
     db.refresh(item)
     return item
+
+
+@router.post("/cleaning", response_model=schemas.CleaningTaskOut)
+def create_cleaning_task(
+    payload: schemas.CleaningTaskCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Creates a new cleaning task. Requires Owner access.
+    """
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    task = models.CleaningTask(
+        task_name=payload.task_name,
+        frequency=payload.frequency
+    )
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@router.delete("/cleaning/{task_id}")
+def delete_cleaning_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Deletes an existing cleaning task. Requires Owner access.
+    """
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    task = db.query(models.CleaningTask).filter(models.CleaningTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Cleaning task not found")
+    db.delete(task)
+    db.commit()
+    return {"message": f"Successfully deleted cleaning task '{task.task_name}'."}
+
+
+@router.post("/maintenance", response_model=schemas.MaintenanceAssetOut)
+def create_maintenance_asset(
+    payload: schemas.MaintenanceAssetCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Creates a new maintenance asset item. Requires Owner access.
+    """
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    asset = models.MaintenanceAsset(
+        area=payload.area,
+        item_name=payload.item_name,
+        style_or_kind=payload.style_or_kind,
+        condition="OK"
+    )
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+    return asset
+
+
+@router.delete("/maintenance/{item_id}")
+def delete_maintenance_asset(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Deletes an existing maintenance asset item. Requires Owner access.
+    """
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    asset = db.query(models.MaintenanceAsset).filter(models.MaintenanceAsset.id == item_id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Maintenance asset not found")
+    db.delete(asset)
+    db.commit()
+    return {"message": f"Successfully deleted maintenance asset '{asset.item_name}'."}
