@@ -645,7 +645,7 @@ export default function PlannerPage() {
                               </thead>
                               <tbody className="font-semibold text-slate-700">
                                 {items.map((item) => (
-                                  <TableRow key={item.raw_ingredient_id ?? `${item.ingredient_name}-${item.unit}`} className={item.deficit > 0 ? "bg-rose-50/40 font-bold text-rose-900" : ""}>
+                                  <TableRow key={`${item.ingredient_name}-${item.unit}`} className={item.deficit > 0 ? "bg-rose-50/40 font-bold text-rose-900" : ""}>
                                     <TableCell>
                                       <div className="flex flex-col">
                                         <span className="text-sm font-black text-slate-800">{item.ingredient_name}</span>

@@ -250,8 +250,9 @@ export interface ResellerOrderCreate extends ResellerOrderBase {
 export interface ResellerOrderOut extends ResellerOrderBase {
   id: number;
   subtotal: number;
-  discount_rate: number;
+  discount_percentage: number;
   discount_amount: number;
+  tax_rate: number;
   tax_amount: number;
   grand_total: number;
   is_paid: boolean;
@@ -291,6 +292,8 @@ export interface MarketEventAllocationOut extends MarketEventAllocationBase {
 
 export interface MarketEventCreate extends MarketEventBase {
   allocations: MarketEventAllocationCreate[];
+  recurrence?: string;
+  recurrence_count?: number;
 }
 
 export interface MarketEventOut extends MarketEventBase {
@@ -595,6 +598,33 @@ export interface LoginResponse {
 export interface AuthenticatedUser {
   username: string;
   role: string;
+}
+
+export interface TimesheetEntryOut {
+  id: number;
+  employee_user_id?: number | null;
+  employee_name: string;
+  machine_employee_id?: string | null;
+  work_date: string;
+  clock_in?: string | null;
+  clock_out?: string | null;
+  source: string;
+  review_status: string;
+  has_proof: boolean;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface TimesheetPage {
+  items: TimesheetEntryOut[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface TimesheetProofOut {
+  data_url: string;
+  mime_type: string;
 }
 
 // ----------------------------------------------------
@@ -1045,11 +1075,21 @@ export const api = {
       body: JSON.stringify(data),
     }),
   payResellerOrder: (id: number): Promise<ResellerOrderOut> => fetchJson(`/resellers/orders/${id}/pay`, { method: "POST" }),
+  deleteResellerOrder: (id: number): Promise<{ message: string }> => fetchJson(`/resellers/orders/${id}`, { method: "DELETE" }),
 
   // ----------------------------------------------------
   // MAINTENANCE & TASKS
   // ----------------------------------------------------
   getCleaningTasks: (): Promise<CleaningTaskOut[]> => fetchJson("/tasks/cleaning"),
+  createCleaningTask: (data: { task_name: string; frequency: string }): Promise<CleaningTaskOut> =>
+    fetchJson("/tasks/cleaning", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteCleaningTask: (id: number): Promise<{ message: string }> =>
+    fetchJson(`/tasks/cleaning/${id}`, {
+      method: "DELETE",
+    }),
   completeCleaningTask: (id: number, dateDone: string, remarks?: string): Promise<any> => {
     const qs = remarks ? `&remarks=${encodeURIComponent(remarks)}` : "";
     return fetchJson(`/tasks/cleaning/${id}/complete?date_done=${encodeURIComponent(dateDone)}${qs}`, {
@@ -1060,11 +1100,58 @@ export const api = {
     const qs = area ? `?area=${encodeURIComponent(area)}` : "";
     return fetchJson(`/tasks/maintenance${qs}`);
   },
+  createMaintenanceAsset: (data: Partial<MaintenanceAssetOut>): Promise<MaintenanceAssetOut> =>
+    fetchJson("/tasks/maintenance", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   updateMaintenanceAsset: (id: number, data: Partial<MaintenanceAssetOut>): Promise<MaintenanceAssetOut> => 
     fetchJson(`/tasks/maintenance/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+  deleteMaintenanceAsset: (id: number): Promise<{ message: string }> =>
+    fetchJson(`/tasks/maintenance/${id}`, {
+      method: "DELETE",
+    }),
+
+  // ----------------------------------------------------
+  // TIMESHEETS
+  // ----------------------------------------------------
+  getTimesheets: (limit?: number, offset?: number): Promise<TimesheetPage> => {
+    let url = "/timesheets";
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const query = params.toString();
+    if (query) url += `?${query}`;
+    return fetchJson(url);
+  },
+  importMachineTimesheets: (rows: Array<Record<string, string>>): Promise<TimesheetEntryOut[]> =>
+    fetchJson("/timesheets/import", {
+      method: "POST",
+      body: JSON.stringify({ rows: rows.map(r => ({ values: r })) }),
+    }),
+  createManualTimesheet: (data: {
+    client_reference: string;
+    work_date: string;
+    clock_in: string;
+    clock_out: string | null;
+    notes?: string;
+    proof_image_data: string;
+    proof_image_type: "image/jpeg" | "image/png" | "image/webp";
+  }): Promise<TimesheetEntryOut> =>
+    fetchJson("/timesheets/manual", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  reviewTimesheet: (id: number, status: "Approved" | "Rejected"): Promise<TimesheetEntryOut> =>
+    fetchJson(`/timesheets/${id}/review`, {
+      method: "POST",
+      body: JSON.stringify({ review_status: status }),
+    }),
+  getTimesheetProof: (id: number): Promise<TimesheetProofOut> =>
+    fetchJson(`/timesheets/${id}/proof`),
 
   // ----------------------------------------------------
   // GIFT SET BUNDLES & OVERHEAD RATES

@@ -1137,7 +1137,7 @@ export default function RecipesPage() {
                                   <ProductDisplay
                                     sku={item.sku}
                                     productName={item.product_name}
-                                    category={product?.category || item.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                                    category={product?.category || UNCATEGORIZED_BUSINESS_CATEGORY}
                                     size={item.size}
                                     variant="selector"
                                     showIcon={false}
@@ -1180,7 +1180,7 @@ export default function RecipesPage() {
                       {overheadRates.map((rate) => {
                         const labor = editLabor[rate.category] !== undefined ? editLabor[rate.category] : rate.labor_cost_per_unit;
                         const util = editUtility[rate.category] !== undefined ? editUtility[rate.category] : rate.utility_cost_per_unit;
-                        const total = parseFloat(labor || 0) + parseFloat(util || 0);
+                        const total = parseFloat(String(labor || 0)) + parseFloat(String(util || 0));
                         const isDirty = editLabor[rate.category] !== undefined || editUtility[rate.category] !== undefined;
 
                         return (
@@ -1381,7 +1381,7 @@ export default function RecipesPage() {
                                 aria-label={`Ingredient type for row ${idx + 1}`}
                                 onChange={(e) => {
                                   const updated = [...editIngredients];
-                                  updated[idx].ingredient_type = e.target.value;
+                                  updated[idx].ingredient_type = e.target.value as "sku" | "raw";
                                   if (e.target.value === "raw") {
                                     updated[idx].sub_sku = "";
                                     if (rawIngredients.length > 0) {
@@ -1662,7 +1662,7 @@ export default function RecipesPage() {
                                 <ProductDisplay
                                   sku={item.sub_sku || subProduct?.sku || "Unknown SKU"}
                                   productName={item.sub_product_name || subProduct?.product_name || item.sub_sku || "Unknown sub-product"}
-                                  category={subProduct?.category || item.category || UNCATEGORIZED_BUSINESS_CATEGORY}
+                                  category={subProduct?.category || UNCATEGORIZED_BUSINESS_CATEGORY}
                                   size={subProduct?.size || item.size}
                                   variant="compact"
                                   showIcon={false}
@@ -1673,8 +1673,8 @@ export default function RecipesPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setSelectedRawId(item.raw_ingredient_id);
-                                  setSelectedRawName(item.raw_ingredient_name);
+                                  setSelectedRawId(item.raw_ingredient_id ?? null);
+                                  setSelectedRawName(item.raw_ingredient_name ?? "");
                                   setIsEditPriceOpen(true);
                                 }}
                                 aria-label={`Edit unit price for ${item.raw_ingredient_name}`}
