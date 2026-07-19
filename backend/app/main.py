@@ -470,6 +470,7 @@ env_mode = os.getenv("ENVIRONMENT", os.getenv("VERCEL_ENV", os.getenv("ENV", "de
 if env_mode == "production":
     origins = [
         "https://hh-portal.vercel.app",
+        "https://food-operations-erp-demo.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
