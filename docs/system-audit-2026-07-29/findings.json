@@ -1,0 +1,122 @@
+{
+  "audit_date": "2026-07-29",
+  "production_url": "https://hh-portal.vercel.app",
+  "production_commit": "98bafa76b76996e0bc2f1201fdf39f94a02acb33",
+  "summary": {
+    "critical": 3,
+    "high": 4,
+    "medium": 4,
+    "low": 1,
+    "total": 12
+  },
+  "findings": [
+    {
+      "id": "HH-AUD-001",
+      "severity": "critical",
+      "area": "Public pre-orders",
+      "title": "Three active Half products are publicly orderable at zero price",
+      "status": "confirmed-production",
+      "evidence": "CQM-HF-SW-SVR, CQMD-HF-SW-SVR, and PPZ-HF-SW-SVR have retail_price=0 and appear in the public catalog. A zero-price item can be added and the enabled submit action shows a PHP 0.00 total. The backend catalog and submission queries explicitly allow retail_price >= 0.",
+      "recommended_action": "Immediately disable or correctly price the three SKUs, then require retail_price > 0 in both public catalog and submission validation with regression tests."
+    },
+    {
+      "id": "HH-AUD-002",
+      "severity": "critical",
+      "area": "Offline and authentication",
+      "title": "The generic offline queue can persist credentials and replay unsafe writes",
+      "status": "confirmed-production-code",
+      "evidence": "On a fetch failure, every non-GET mutation outside a small denylist is written to hh_offline_db. POST /login is not excluded, so its username and password body can be stored in IndexedDB. Stock, consignment, warehouse-transfer, batch-intake, user-management, and administrative mutations can also be replayed after an uncertain delivery.",
+      "recommended_action": "Replace the denylist with an explicit allowlist of idempotent offline operations, permanently exclude authentication and privileged mutations, remove or quarantine legacy unsafe rows, and add automated offline/reconnect tests."
+    },
+    {
+      "id": "HH-AUD-003",
+      "severity": "critical",
+      "area": "Deployment and database",
+      "title": "Current local code expects database structures missing in production",
+      "status": "confirmed-production",
+      "evidence": "Production is missing ingredient_price_history plus six cost-snapshot columns on each of consignment_items, market_event_sale_items, and reseller_order_items, for 18 missing columns total.",
+      "recommended_action": "Treat the reviewed migrations as a deployment prerequisite and run a schema preflight before deploying the current local implementation."
+    },
+    {
+      "id": "HH-AUD-004",
+      "severity": "high",
+      "area": "Google Sheets",
+      "title": "Sheet edits are not updating the Hub",
+      "status": "confirmed-production",
+      "evidence": "All six Sheet-sync tables are empty and the five required Google Sheets server environment variables are absent. Live comparison found three unique SRP differences and three Full/Half SKU collisions. Jar cost has no safe canonical mapping.",
+      "recommended_action": "Correct duplicate SKUs, apply the migrations, configure the read-only service account environment, run a manual dry run with auto-apply off, then enable bounded price auto-apply only after one verified test."
+    },
+    {
+      "id": "HH-AUD-005",
+      "severity": "high",
+      "area": "Costing and dashboard data",
+      "title": "Current product-cost outputs are not fully trustworthy",
+      "status": "confirmed-production",
+      "evidence": "Five zero-priced ingredients affect 31 products through 51 recipe links; eight active products have no recipe; eleven recipes have nonpositive yield; and ST-SAM-SWT computes to PHP 548.08 total cost against PHP 245 SRP.",
+      "recommended_action": "Repair source prices, recipe references, yields, and missing recipes before using margin and weekly food-cost outputs for decisions."
+    },
+    {
+      "id": "HH-AUD-006",
+      "severity": "high",
+      "area": "Suppliers and alerts",
+      "title": "Supplier-linked price alerts cannot be authoritative",
+      "status": "confirmed-production",
+      "evidence": "The live database has zero suppliers and all 134 ingredients lack supplier links. The live production schema also lacks ingredient_price_history.",
+      "recommended_action": "Create the supplier master, link ingredients, establish stable packaging and ingredient identifiers, and capture normalized unit-price history before enabling supplier or price-hike alerts."
+    },
+    {
+      "id": "HH-AUD-007",
+      "severity": "high",
+      "area": "Mobile pre-order UI",
+      "title": "Checkout is buried and a category control overflows on phone widths",
+      "status": "confirmed-production",
+      "evidence": "At 390x844 the order form begins about 10,497 CSS pixels down, roughly 12.4 screens after 46 product cards. At 412x915 it begins about 11.2 screens down. The Sandwiches & Salads category control extends beyond the measured phone width.",
+      "recommended_action": "Use filter-first browsing with a sticky cart or bottom-sheet checkout, keep category controls within the viewport, and enforce 44-pixel mobile targets."
+    },
+    {
+      "id": "HH-AUD-008",
+      "severity": "medium",
+      "area": "Product categorization",
+      "title": "Two sandwich products are classified as spreads",
+      "status": "confirmed-production-data-and-code",
+      "evidence": "PCLB-HF-SW-SVR and WMS-HF-SW-SWT match Sweet/Savory checks before the -SW- sandwich rule in both frontend and owner-dashboard category logic.",
+      "recommended_action": "Give explicit sandwich SKU/name rules precedence, centralize the mapping contract, and add shared frontend/backend fixtures."
+    },
+    {
+      "id": "HH-AUD-009",
+      "severity": "medium",
+      "area": "Market Events POS history",
+      "title": "Current POS safety is strong, but legacy sale traceability is incomplete",
+      "status": "confirmed-production",
+      "evidence": "Current client-reference idempotency and stock reconciliation pass. Historical data still has 12 sales without client_reference, 10 cash sales without cash_received, and two sales without idempotency markers.",
+      "recommended_action": "Preserve current safeguards, mark legacy rows explicitly, and avoid inferring tender or change for historical records."
+    },
+    {
+      "id": "HH-AUD-010",
+      "severity": "medium",
+      "area": "Inventory audit trail",
+      "title": "Stock mirrors reconcile, but batch and ledger history need cleanup",
+      "status": "confirmed-production",
+      "evidence": "Main Facility ingredient and SKU mirrors have zero drift and no negative stock. Four ingredient batch balances differ from available stock, and 21 zero-quantity manual-adjustment rows were created during event closeouts.",
+      "recommended_action": "Reconcile the four legacy batch balances and stop writing zero-quantity business ledger entries."
+    },
+    {
+      "id": "HH-AUD-011",
+      "severity": "medium",
+      "area": "Verification coverage",
+      "title": "Core backend tests pass, but browser-offline and live workflow proof is incomplete",
+      "status": "coverage-gap",
+      "evidence": "All 138 backend tests pass, including market-event idempotency, stock rollback, pre-order, and production completion. There is no frontend test command or automated IndexedDB/offline suite, no completed live production plan, and no current live consignment delivery data.",
+      "recommended_action": "Add deterministic frontend offline tests and stage one complete production, consignment, pre-order, and reconnect lifecycle before release."
+    },
+    {
+      "id": "HH-AUD-012",
+      "severity": "low",
+      "area": "Database access policy",
+      "title": "Eleven RLS-enabled tables have no explicit policy",
+      "status": "confirmed-production",
+      "evidence": "Supabase reports informational rls_enabled_no_policy findings for newer tables. RLS is enabled on all public tables, so anon/authenticated access is denied rather than exposed.",
+      "recommended_action": "Document the intended API-only model and add narrowly scoped service-role policies only if PostgREST access is required."
+    }
+  ]
+}

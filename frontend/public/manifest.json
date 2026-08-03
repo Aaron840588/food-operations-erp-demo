@@ -1,0 +1,23 @@
+{
+  "name": "H+H Hub",
+  "short_name": "H+H Hub",
+  "description": "Handmade+Homemade operations management platform. Recipe costing, kitchen planning, B2B consignment, and inventory control.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f5",
+  "theme_color": "#bc9037",
+  "icons": [
+    {
+      "src": "/hh-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/hh-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

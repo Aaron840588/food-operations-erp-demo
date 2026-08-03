@@ -1,0 +1,4590 @@
+{
+  "checks": {
+    "catalog": {
+      "active_nonpositive_price_products": [
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO CROQUE MONSIEUR",
+          "reseller_price": 0.0,
+          "retail_price": 0.0,
+          "size": "Half",
+          "sku": "CQM-HF-SW-SVR",
+          "warehouse_stock": 0
+        },
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO CROQUE MADAME",
+          "reseller_price": 0.0,
+          "retail_price": 0.0,
+          "size": "Half",
+          "sku": "CQMD-HF-SW-SVR",
+          "warehouse_stock": 0
+        },
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO PEPPERONI PIZZA SANDWICH",
+          "reseller_price": 0.0,
+          "retail_price": 0.0,
+          "size": "Half",
+          "sku": "PPZ-HF-SW-SVR",
+          "warehouse_stock": 0
+        }
+      ],
+      "active_products_missing_recipe": [
+        {
+          "category": "giftset",
+          "product_name": "Gift Set (1x Chili Garlic Oil + 1x Creamy Matcha)",
+          "sku": "GS-1"
+        },
+        {
+          "category": "giftset",
+          "product_name": "Gift Set (2x Chili Garlic Oil + 1x Pesto with Pili)",
+          "sku": "GS-2"
+        },
+        {
+          "category": "giftset",
+          "product_name": "Chili Garlic Oil, Creamy Matcha Spread",
+          "sku": "GS-3"
+        },
+        {
+          "category": "giftset",
+          "product_name": "Gift Set (1x Chili Garlic Oil + 1x Pesto with Pili + 1x Creamy Matcha  with White Chocolate)",
+          "sku": "GS-4"
+        },
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO CROQUE MONSIEUR",
+          "sku": "CQM-HF-SW-SVR"
+        },
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO CROQUE MADAME",
+          "sku": "CQMD-HF-SW-SVR"
+        },
+        {
+          "category": "Sandwich",
+          "product_name": "PESTO PEPPERONI PIZZA SANDWICH",
+          "sku": "PPZ-HF-SW-SVR"
+        },
+        {
+          "category": "Sweet",
+          "product_name": "WHITE MOCHA S'MORES",
+          "sku": "WMS-HF-SW-SWT"
+        }
+      ],
+      "active_products_with_unrecognized_source_category": [],
+      "active_products_zero_or_missing_cost": [
+        {
+          "category": "Sandwich",
+          "cost_per_unit": 0.0,
+          "labor_cost": 0.0,
+          "product_name": "PESTO CROQUE MONSIEUR",
+          "retail_price": 0.0,
+          "sku": "CQM-HF-SW-SVR",
+          "utility_cost": 3.28
+        },
+        {
+          "category": "Sandwich",
+          "cost_per_unit": 0.0,
+          "labor_cost": 0.0,
+          "product_name": "PESTO CROQUE MADAME",
+          "retail_price": 0.0,
+          "sku": "CQMD-HF-SW-SVR",
+          "utility_cost": 3.28
+        },
+        {
+          "category": "Sandwich",
+          "cost_per_unit": 0.0,
+          "labor_cost": 0.0,
+          "product_name": "PESTO PEPPERONI PIZZA SANDWICH",
+          "retail_price": 0.0,
+          "sku": "PPZ-HF-SW-SVR",
+          "utility_cost": 3.28
+        },
+        {
+          "category": "Sweet",
+          "cost_per_unit": 0.0,
+          "labor_cost": 0.0,
+          "product_name": "WHITE MOCHA S'MORES",
+          "retail_price": 80.0,
+          "sku": "WMS-HF-SW-SWT",
+          "utility_cost": 3.28
+        }
+      ],
+      "category_precedence_misclassification_candidates": [
+        {
+          "category": "Savory",
+          "product_name": "PESTO CLUB SANDWICH",
+          "size": "Half",
+          "sku": "PCLB-HF-SW-SVR"
+        },
+        {
+          "category": "Sweet",
+          "product_name": "WHITE MOCHA S'MORES",
+          "size": "Half",
+          "sku": "WMS-HF-SW-SWT"
+        }
+      ],
+      "computed_cost_status": {
+        "non_ok_products": [
+          {
+            "category": "Sandwich",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "PESTO CROQUE MONSIEUR",
+            "retail_price": 0.0,
+            "sku": "CQM-HF-SW-SVR",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "Sandwich",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "PESTO CROQUE MADAME",
+            "retail_price": 0.0,
+            "sku": "CQMD-HF-SW-SVR",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "giftset",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "Gift Set (1x Chili Garlic Oil + 1x Creamy Matcha)",
+            "retail_price": 420.0,
+            "sku": "GS-1",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "giftset",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "Gift Set (2x Chili Garlic Oil + 1x Pesto with Pili)",
+            "retail_price": 610.0,
+            "sku": "GS-2",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "giftset",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "Chili Garlic Oil, Creamy Matcha Spread",
+            "retail_price": 420.0,
+            "sku": "GS-3",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "giftset",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "Gift Set (1x Chili Garlic Oil + 1x Pesto with Pili + 1x Creamy Matcha  with White Chocolate)",
+            "retail_price": 855.0,
+            "sku": "GS-4",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "Sandwich",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "PESTO PEPPERONI PIZZA SANDWICH",
+            "retail_price": 0.0,
+            "sku": "PPZ-HF-SW-SVR",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          },
+          {
+            "category": "Sweet",
+            "food_cost": 530.74,
+            "message": "Cost exceeds selling price",
+            "product_name": "Sweet Tablea with Peanuts Spread",
+            "retail_price": 245.0,
+            "sku": "ST-SAM-SWT",
+            "status": "invalid_cost",
+            "total_cost": 548.08
+          },
+          {
+            "category": "Sweet",
+            "food_cost": 0.0,
+            "message": "Recipe missing",
+            "product_name": "WHITE MOCHA S'MORES",
+            "retail_price": 80.0,
+            "sku": "WMS-HF-SW-SWT",
+            "status": "missing_recipe",
+            "total_cost": 3.28
+          }
+        ],
+        "status_counts": {
+          "invalid_cost": 1,
+          "missing_recipe": 8,
+          "ok": 45
+        }
+      },
+      "direct_recipe_cycles": [],
+      "invalid_product_financial_values": [
+        {
+          "negative_cost_per_unit": 0,
+          "negative_labor_cost": 0,
+          "negative_reseller_price": 0,
+          "negative_utility_cost": 0,
+          "negative_warehouse_stock": 0,
+          "nonpositive_density_multiplier": 0,
+          "nonpositive_retail_price": 3
+        }
+      ],
+      "product_status_by_category": [
+        {
+          "category": "giftset",
+          "is_active": true,
+          "product_count": 4
+        },
+        {
+          "category": "Pasta Tub",
+          "is_active": true,
+          "product_count": 3
+        },
+        {
+          "category": "Sandwich",
+          "is_active": true,
+          "product_count": 31
+        },
+        {
+          "category": "Savory",
+          "is_active": true,
+          "product_count": 7
+        },
+        {
+          "category": "Sweet",
+          "is_active": true,
+          "product_count": 9
+        }
+      ],
+      "recipe_item_shape_issues": [
+        {
+          "dual_reference": 0,
+          "invalid_types": 0,
+          "nonpositive_quantities": 8,
+          "raw_missing_reference": 6,
+          "sku_missing_reference": 0
+        }
+      ],
+      "recipe_shape_issues": [
+        {
+          "nonpositive_portions": 0,
+          "nonpositive_yields": 11
+        }
+      ]
+    },
+    "database_security": {
+      "anon_authenticated_grants": [
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "DELETE",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "INSERT",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "REFERENCES",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "SELECT",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRIGGER",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "TRUNCATE",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "anon",
+          "privilege_type": "UPDATE",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "consignment_partners"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "discount_tiers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "gift_set_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "gift_sets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "ingredient_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "inventory_transactions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "maintenance_assets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_allocations"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "market_event_sales"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "market_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "overhead_configs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_forms"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "preorder_status_history"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "preorders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "product_skus"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "production_batches"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "production_plans"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "production_targets"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "push_subscriptions"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "raw_ingredients"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "recipe_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "recipes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "refresh_tokens"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "reseller_order_items"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "reseller_orders"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "suppliers"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "timesheet_entries"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "users"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "DELETE",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "INSERT",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "REFERENCES",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "SELECT",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRIGGER",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "TRUNCATE",
+          "table_name": "warehouses"
+        },
+        {
+          "grantee": "authenticated",
+          "privilege_type": "UPDATE",
+          "table_name": "warehouses"
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "category_overhead_rates"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "cleaning_tasks"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "consignment_deliveries"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "consignment_items"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "consignment_partners"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "discount_tiers"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "gift_set_items"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "gift_sets"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "ingredient_batches"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "inventory_transactions"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "service_role_full_access",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "login_rate_limits"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "maintenance_assets"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "market_event_allocations"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "market_event_sale_items"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "market_event_sales"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "market_events"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "overhead_configs"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "product_skus"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "production_batches"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "production_plans"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "production_targets"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "push_subscriptions"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "raw_ingredients"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "recipe_items"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "recipes"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "refresh_tokens"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "reseller_order_items"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "reseller_orders"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "suppliers"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "timesheet_entries"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "users"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "warehouse_stocks"
+        },
+        {
+          "cmd": "ALL",
+          "permissive": "PERMISSIVE",
+          "policyname": "backend_service_role_all",
+          "roles": [
+            "service_role"
+          ],
+          "schemaname": "public",
+          "tablename": "warehouses"
+        }
+      ],
+      "public_table_rls": [
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "category_overhead_rates"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "cleaning_tasks"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "consignment_deliveries"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "consignment_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "consignment_partners"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "discount_tiers"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "gift_set_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "gift_sets"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "ingredient_batches"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "inventory_transactions"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "login_rate_limits"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "maintenance_assets"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "market_event_allocations"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "market_event_sale_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "market_event_sales"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "market_events"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "overhead_configs"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "preorder_audit_events"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "preorder_forms"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "preorder_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "preorder_status_history"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "preorders"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "product_skus"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "production_batches"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "production_plans"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "production_targets"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "push_subscriptions"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "raw_ingredients"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "recipe_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "recipes"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "refresh_tokens"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "reseller_order_items"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "reseller_orders"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_change_events"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_changes"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_mappings"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_runs"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_snapshots"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "sheet_sync_sources"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "suppliers"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "timesheet_entries"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "users"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "warehouse_stocks"
+        },
+        {
+          "rls_enabled": true,
+          "rls_forced": false,
+          "table_name": "warehouses"
+        }
+      ]
+    },
+    "ingredients": {
+      "invalid_values": [
+        {
+          "negative_price": 0,
+          "negative_reorder_level": 0,
+          "negative_stock": 0,
+          "negative_unit_cost": 0,
+          "nonpositive_net_weight": 0
+        }
+      ],
+      "missing_supplier_links": 134,
+      "normalized_duplicate_names": [],
+      "supplier_count": 0,
+      "zero_price_or_weight": [
+        {
+          "category": "Food",
+          "cost_per_gram_unit": 0.0,
+          "id": 49,
+          "name": "FOR ROLLING",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food",
+          "cost_per_gram_unit": 0.0,
+          "id": 33,
+          "name": "if frozen",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "grams"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 90,
+          "name": "boxes",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "pc"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 79,
+          "name": "Butter",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 97,
+          "name": "Disinfecting Tablets",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "bottle"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 85,
+          "name": "Jar+shipping",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "box"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 82,
+          "name": "Light corn syrup",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 84,
+          "name": "Peanuts with balat",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 95,
+          "name": "Sanitation Gun",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "pc"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 87,
+          "name": "Thermal sticker",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "roll"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 80,
+          "name": "VH semi sweet compound",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Non-Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 83,
+          "name": "VH white choc compound",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 86,
+          "name": "bread",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 102,
+          "name": "coconut vinegar",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 81,
+          "name": "Condensed Milk",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 96,
+          "name": "crushed graham",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 91,
+          "name": "dried shiitake",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 88,
+          "name": "fusilli",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 93,
+          "name": "Gloves L",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "box"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 78,
+          "name": "ground parmesan cheese",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 103,
+          "name": "Ice candy bag",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 100,
+          "name": "insecticide spray",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "pc"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 94,
+          "name": "marshmallow",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 99,
+          "name": "mozzarella",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 70,
+          "name": "others",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "mo"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 89,
+          "name": "spaghettini",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "g"
+        },
+        {
+          "category": "Food (Perishable)",
+          "cost_per_gram_unit": 0.0,
+          "id": 67,
+          "name": "toothpick",
+          "net_weight": 1.0,
+          "price": 0.0,
+          "unit": "pack"
+        }
+      ],
+      "zero_priced_recipe_input_impact": [
+        {
+          "affected_products": 31,
+          "affected_recipe_links": 51,
+          "zero_priced_inputs": 5
+        }
+      ],
+      "zero_priced_recipe_inputs": [
+        {
+          "affected_product_count": 29,
+          "available_stock": 400.0,
+          "id": 86,
+          "name": "bread"
+        },
+        {
+          "affected_product_count": 14,
+          "available_stock": 150.0,
+          "id": 78,
+          "name": "ground parmesan cheese"
+        },
+        {
+          "affected_product_count": 4,
+          "available_stock": 200.0,
+          "id": 94,
+          "name": "marshmallow"
+        },
+        {
+          "affected_product_count": 2,
+          "available_stock": 1000.0,
+          "id": 81,
+          "name": "Condensed Milk"
+        },
+        {
+          "affected_product_count": 2,
+          "available_stock": 0.0,
+          "id": 96,
+          "name": "crushed graham"
+        }
+      ]
+    },
+    "inventory": {
+      "batch_balance_drift": [
+        {
+          "available_stock": 300.0,
+          "batch_quantity": 0.0,
+          "difference": -300.0,
+          "id": 1,
+          "name": "All-Purpose Flour"
+        },
+        {
+          "available_stock": 300.0,
+          "batch_quantity": 0.0,
+          "difference": -300.0,
+          "id": 4,
+          "name": "Water"
+        },
+        {
+          "available_stock": 200.0,
+          "batch_quantity": 0.0,
+          "difference": -200.0,
+          "id": 52,
+          "name": "Ground biscoff"
+        },
+        {
+          "available_stock": 149.99,
+          "batch_quantity": 149.985,
+          "difference": -0.00499999999999545,
+          "id": 6,
+          "name": "Salt"
+        }
+      ],
+      "duplicate_stock_rows": [],
+      "invalid_stock_subjects": [
+        {
+          "dual_subject": 0,
+          "missing_subject": 0,
+          "negative_quantity": 0
+        }
+      ],
+      "main_ingredient_mirror_drift": [],
+      "main_product_mirror_drift": [],
+      "transaction_subject_issues": [
+        {
+          "dual_subject": 0,
+          "missing_subject": 0,
+          "zero_quantity": 21
+        }
+      ],
+      "transaction_types": [
+        {
+          "first_seen": "2026-07-12T06:09:27.614860",
+          "last_seen": "2026-07-27T23:20:56.846008",
+          "transaction_count": 178,
+          "transaction_type": "manual_adjustment"
+        },
+        {
+          "first_seen": "2026-07-13T09:17:17.577485",
+          "last_seen": "2026-07-24T10:41:12.910453",
+          "transaction_count": 29,
+          "transaction_type": "market_sale_idempotency"
+        },
+        {
+          "first_seen": "2026-07-13T00:19:59.578591",
+          "last_seen": "2026-07-16T05:26:29.638671",
+          "transaction_count": 11,
+          "transaction_type": "sales_deduct"
+        },
+        {
+          "first_seen": "2026-07-13T00:18:19.281679",
+          "last_seen": "2026-07-22T16:16:41.941276",
+          "transaction_count": 8,
+          "transaction_type": "waste"
+        },
+        {
+          "first_seen": "2026-07-18T22:36:13.304905",
+          "last_seen": "2026-07-18T22:36:21.536652",
+          "transaction_count": 5,
+          "transaction_type": "sales_return"
+        },
+        {
+          "first_seen": "2026-07-12T06:19:32.089271",
+          "last_seen": "2026-07-15T13:09:44.270553",
+          "transaction_count": 3,
+          "transaction_type": "consignment_deduct"
+        }
+      ],
+      "warehouse_identity": [
+        {
+          "id": 1,
+          "is_active": true,
+          "name": "Main Facility"
+        }
+      ],
+      "zero_quantity_business_ledger_rows": [
+        {
+          "first_seen": "2026-07-12T06:22:51.241345",
+          "last_seen": "2026-07-24T02:47:50.214636",
+          "row_count": 21,
+          "transaction_type": "manual_adjustment"
+        }
+      ]
+    },
+    "market_events": {
+      "allocation_balance_issues": [],
+      "cash_tender_issues": [
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 2,
+          "id": 1,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 210.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 4,
+          "id": 2,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 130.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 6,
+          "id": 6,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 630.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 9,
+          "id": 7,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 1085.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 10,
+          "id": 8,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 875.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 10,
+          "id": 9,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 1000.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 11,
+          "id": 10,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 840.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 22,
+          "id": 11,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 500.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 22,
+          "id": 12,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 240.0
+        },
+        {
+          "cash_received": null,
+          "change_given": 0.0,
+          "event_id": 23,
+          "id": 13,
+          "is_preorder": false,
+          "preorder_payment_status": null,
+          "tip_amount": 0.0,
+          "total_amount": 1650.0
+        }
+      ],
+      "date_or_status_issues": [],
+      "duplicate_allocation_skus": [],
+      "duplicate_sale_client_references": [],
+      "events_without_allocations": [],
+      "invalid_sale_items": [
+        {
+          "negative_price": 0,
+          "nonpositive_quantity": 0
+        }
+      ],
+      "missing_sale_client_reference": 12,
+      "orphan_idempotency_markers": [],
+      "payment_methods": [
+        {
+          "net_sales": 10525.0,
+          "payment_method": "Cash",
+          "sale_count": 19
+        },
+        {
+          "net_sales": 5010.0,
+          "payment_method": "GCash",
+          "sale_count": 9
+        },
+        {
+          "net_sales": 1095.0,
+          "payment_method": "BPI / Bank Transfer",
+          "sale_count": 1
+        },
+        {
+          "net_sales": 2585.0,
+          "payment_method": "Maya",
+          "sale_count": 1
+        },
+        {
+          "net_sales": 130.0,
+          "payment_method": "Mixed",
+          "sale_count": 1
+        }
+      ],
+      "preorder_sale_shape_issues": [],
+      "sale_total_reconciliation": [],
+      "sales_without_idempotency_marker": [
+        {
+          "client_reference": null,
+          "event_id": 2,
+          "id": 1
+        },
+        {
+          "client_reference": null,
+          "event_id": 4,
+          "id": 2
+        }
+      ],
+      "status_counts": [
+        {
+          "event_count": 2,
+          "is_deleted": false,
+          "status": "Active"
+        },
+        {
+          "event_count": 1,
+          "is_deleted": true,
+          "status": "Active"
+        },
+        {
+          "event_count": 8,
+          "is_deleted": true,
+          "status": "Cancelled"
+        },
+        {
+          "event_count": 10,
+          "is_deleted": true,
+          "status": "Completed"
+        },
+        {
+          "event_count": 12,
+          "is_deleted": true,
+          "status": "Draft"
+        }
+      ]
+    },
+    "partner_sales": {
+      "consignment_balance_issues": [],
+      "consignment_payment_shape_issues": [],
+      "reseller_item_issues": [],
+      "reseller_order_total_reconciliation": []
+    },
+    "preorders": {
+      "form_status": [
+        {
+          "created_at": "2026-07-23T01:59:03.764070",
+          "event_id": null,
+          "id": 1,
+          "is_enabled": true,
+          "name": "Default Customer Pre-Order Form",
+          "updated_at": "2026-07-23T23:43:07.001036"
+        }
+      ],
+      "fulfillment_link_issues": [],
+      "history_sequence_gaps": [],
+      "item_reconciliation": [],
+      "missing_history_or_audit": [],
+      "status_counts": [
+        {
+          "payment_status": "Unpaid",
+          "preorder_count": 1,
+          "status": "Cancelled"
+        }
+      ],
+      "total_reconciliation": []
+    },
+    "production": {
+      "batch_issues": [],
+      "completed_plan_batch_coverage": [],
+      "invalid_plan_values": [],
+      "plan_status_counts": [
+        {
+          "earliest_date": "2026-07-13",
+          "latest_date": "2026-07-15",
+          "plan_count": 2,
+          "status": "draft"
+        }
+      ],
+      "plans_without_targets": [],
+      "target_issues": []
+    },
+    "sheet_sync": {
+      "change_status_counts": [],
+      "run_status_counts": [],
+      "table_counts": {
+        "sheet_sync_change_events": 0,
+        "sheet_sync_changes": 0,
+        "sheet_sync_mappings": 0,
+        "sheet_sync_runs": 0,
+        "sheet_sync_snapshots": 0,
+        "sheet_sync_sources": 0
+      }
+    }
+  },
+  "contains_customer_contact_data": false,
+  "database": {
+    "dialect": "postgresql",
+    "row_counts": {
+      "category_overhead_rates": 4,
+      "cleaning_tasks": 7,
+      "consignment_deliveries": 0,
+      "consignment_items": 0,
+      "consignment_partners": 7,
+      "discount_tiers": 5,
+      "gift_set_items": 9,
+      "gift_sets": 4,
+      "ingredient_batches": 66,
+      "inventory_transactions": 234,
+      "login_rate_limits": 6,
+      "maintenance_assets": 8,
+      "market_event_allocations": 65,
+      "market_event_sale_items": 57,
+      "market_event_sales": 31,
+      "market_events": 33,
+      "overhead_configs": 0,
+      "preorder_audit_events": 4,
+      "preorder_forms": 1,
+      "preorder_items": 3,
+      "preorder_status_history": 5,
+      "preorders": 1,
+      "product_skus": 54,
+      "production_batches": 14,
+      "production_plans": 2,
+      "production_targets": 4,
+      "push_subscriptions": 1,
+      "raw_ingredients": 134,
+      "recipe_items": 282,
+      "recipes": 46,
+      "refresh_tokens": 125,
+      "reseller_order_items": 6,
+      "reseller_orders": 1,
+      "sheet_sync_change_events": 0,
+      "sheet_sync_changes": 0,
+      "sheet_sync_mappings": 0,
+      "sheet_sync_runs": 0,
+      "sheet_sync_snapshots": 0,
+      "sheet_sync_sources": 0,
+      "suppliers": 0,
+      "timesheet_entries": 0,
+      "users": 4,
+      "warehouse_stocks": 188,
+      "warehouses": 1
+    },
+    "schema_drift": {
+      "column_differences": [
+        {
+          "extra_database_columns": [],
+          "missing_database_columns": [
+            "cost_snapshot_recorded_at",
+            "cost_status_snapshot",
+            "food_cost_snapshot",
+            "labor_cost_snapshot",
+            "total_cost_snapshot",
+            "utility_cost_snapshot"
+          ],
+          "table": "consignment_items"
+        },
+        {
+          "extra_database_columns": [],
+          "missing_database_columns": [
+            "cost_snapshot_recorded_at",
+            "cost_status_snapshot",
+            "food_cost_snapshot",
+            "labor_cost_snapshot",
+            "total_cost_snapshot",
+            "utility_cost_snapshot"
+          ],
+          "table": "market_event_sale_items"
+        },
+        {
+          "extra_database_columns": [],
+          "missing_database_columns": [
+            "cost_snapshot_recorded_at",
+            "cost_status_snapshot",
+            "food_cost_snapshot",
+            "labor_cost_snapshot",
+            "total_cost_snapshot",
+            "utility_cost_snapshot"
+          ],
+          "table": "reseller_order_items"
+        }
+      ],
+      "extra_tables_in_database": [],
+      "missing_tables_in_database": [
+        "ingredient_price_history"
+      ]
+    },
+    "table_count": 44
+  },
+  "generated_at": "2026-07-29T11:51:39.847554+08:00",
+  "scope": "Configured live database, aggregate read-only reconciliation"
+}

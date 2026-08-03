@@ -1,0 +1,16 @@
+{
+  "users": [],
+  "suppliers": [],
+  "raw_ingredients": [],
+  "product_skus": [],
+  "recipes": [],
+  "discount_tiers": [],
+  "reseller_orders": [],
+  "consignment_partners": [],
+  "consignment_deliveries": [],
+  "overhead_configs": [],
+  "category_overhead_rates": [],
+  "maintenance_assets": [],
+  "cleaning_tasks": [],
+  "inventory_transactions": []
+}

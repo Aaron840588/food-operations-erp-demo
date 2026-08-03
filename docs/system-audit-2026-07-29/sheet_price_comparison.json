@@ -1,0 +1,99 @@
+{
+  "checked_at": "2026-07-29T03:25:51.482Z",
+  "source": {
+    "spreadsheet_title": "Partner Inventory Management",
+    "spreadsheet_id": "1cwxsw5sm00eSyMvaCAeLyJ2RZ5prSGNtsCFpdBH1qi4",
+    "sheet_name": "RTE Food Info",
+    "range": "B5:H200"
+  },
+  "sheet_row_count": 28,
+  "unique_sku_count": 25,
+  "duplicate_skus": [
+    {
+      "sku": "PPZ-FL-SW-SVR",
+      "rows": [
+        {
+          "category": "Full",
+          "retail_price": 250,
+          "reseller_price": 212.5
+        },
+        {
+          "category": "Half",
+          "retail_price": 130,
+          "reseller_price": 110.5
+        }
+      ]
+    },
+    {
+      "sku": "CQM-FL-SW-SVR",
+      "rows": [
+        {
+          "category": "Full",
+          "retail_price": 200,
+          "reseller_price": 170
+        },
+        {
+          "category": "Half",
+          "retail_price": 110,
+          "reseller_price": 93.5
+        }
+      ]
+    },
+    {
+      "sku": "CQMD-FL-SW-SVR",
+      "rows": [
+        {
+          "category": "Full",
+          "retail_price": 205,
+          "reseller_price": 174.25
+        },
+        {
+          "category": "Half",
+          "retail_price": 115,
+          "reseller_price": 97.75
+        }
+      ]
+    }
+  ],
+  "unique_rows_compared": 22,
+  "unmatched_unique_sheet_skus": [],
+  "unique_skus_with_price_differences": [
+    {
+      "sku": "GCP-SL-SW-SVR",
+      "product_name": "GRILLED CHEESE & PESTO WITH PILI",
+      "differences": [
+        {
+          "field": "retail_price",
+          "sheet": 90,
+          "hub": 85,
+          "delta": 5
+        }
+      ]
+    },
+    {
+      "sku": "SSS-SL-SW-SVR",
+      "product_name": "SPICY SMOKED SALMON",
+      "differences": [
+        {
+          "field": "retail_price",
+          "sheet": 150,
+          "hub": 120,
+          "delta": 30
+        }
+      ]
+    },
+    {
+      "sku": "TSLD-SL-SW-SVR",
+      "product_name": "TUNA SALAD SANDWICH",
+      "differences": [
+        {
+          "field": "retail_price",
+          "sheet": 115,
+          "hub": 105,
+          "delta": 10
+        }
+      ]
+    }
+  ],
+  "exact_price_matches": 19
+}

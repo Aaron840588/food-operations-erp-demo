@@ -1,0 +1,9 @@
+{
+  "name": "h-h-hub",
+  "version": "2.7.0",
+  "private": true,
+  "dependencies": {
+    "pg": "^8.22.0",
+    "dotenv": "^16.4.5"
+  }
+}

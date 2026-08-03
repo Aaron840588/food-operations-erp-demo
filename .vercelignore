@@ -1,0 +1,2 @@
+# Local generated validation and framework caches are never deployment inputs.
+scratch/
