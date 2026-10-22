@@ -138,3 +138,7 @@ npm audit --omit=dev
 ## 📜 License & Compliance
 
 © 2026 Handmade+Homemade. All rights reserved. Built for portfolio presentation and operational excellence.
+
+## Public-source privacy audit
+
+Private payroll material, deployment/chat transcripts and stale backup files have been removed from the review branch. The calculator now uses named synthetic JSON examples. Past Git commits may still contain removed material; branch cleanup does not erase history. Do not upload private payroll or connect a private production database to this public demo.

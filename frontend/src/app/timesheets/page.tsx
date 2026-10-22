@@ -504,7 +504,7 @@ export default function TimesheetsPage() {
             {role === "owner" && (
               <Card className="p-5 rounded-3xl border-slate-200">
                 <h3 className="font-heading font-black text-slate-900 mb-2">Upload Calculator</h3>
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed">Upload a new `Timesheet Calculator.xlsx` to recalculate and refresh the views.</p>
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed">The built-in examples are fictional. Upload only a synthetic XLSX file to explore a different calculator; never use real payroll records in this demo.</p>
                 <label className="inline-flex w-full justify-center items-center gap-2 rounded-xl bg-[#885625] hover:bg-[#74481d] text-white px-4 py-3 text-sm font-bold cursor-pointer transition-colors">
                   {calculatorLoading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                   Upload XLSX file

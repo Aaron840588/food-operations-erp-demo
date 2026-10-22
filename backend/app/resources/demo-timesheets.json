@@ -1,0 +1,70 @@
+{
+  "employees": {
+    "Demo Staff A": {
+      "employee_name": "Demo Staff A",
+      "periods": [
+        {
+          "period_name": "Synthetic example - October 2026",
+          "side": "left",
+          "rate": 800,
+          "hours_per_shift": 8,
+          "standard_working_hours": 8,
+          "hourly_rate": 100,
+          "shifts": [
+            {
+              "date": "2026-10-01",
+              "start": "08:00",
+              "end": "16:00",
+              "total_hours": 8,
+              "working_days": 1,
+              "total_pay": 800
+            }
+          ],
+          "summary": {
+            "total_hours": 8,
+            "working_days": 1,
+            "paid_work": 800,
+            "allowances": [],
+            "total_pay": 800,
+            "status": "Demo only",
+            "remarks": "Fictional example; no payroll payment is made."
+          }
+        }
+      ],
+      "cash_advances": []
+    },
+    "Demo Staff B": {
+      "employee_name": "Demo Staff B",
+      "periods": [
+        {
+          "period_name": "Synthetic example - October 2026",
+          "side": "left",
+          "rate": 800,
+          "hours_per_shift": 8,
+          "standard_working_hours": 8,
+          "hourly_rate": 100,
+          "shifts": [
+            {
+              "date": "2026-10-01",
+              "start": "08:00",
+              "end": "16:00",
+              "total_hours": 8,
+              "working_days": 1,
+              "total_pay": 800
+            }
+          ],
+          "summary": {
+            "total_hours": 8,
+            "working_days": 1,
+            "paid_work": 800,
+            "allowances": [],
+            "total_pay": 800,
+            "status": "Demo only",
+            "remarks": "Fictional example; no payroll payment is made."
+          }
+        }
+      ],
+      "cash_advances": []
+    }
+  }
+}

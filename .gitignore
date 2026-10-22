@@ -46,3 +46,10 @@ chrome-debug-user/
 /.codex/
 /scratch/
 supabase/.temp/
+
+# Public demo must not retain private payroll or raw exports.
+backups/
+chat_export.md
+SESSION_CONTEXT.md
+PROJECT_STATUS.md
+backend/app/resources/*.xlsx

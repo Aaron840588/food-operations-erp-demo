@@ -119,26 +119,29 @@ class TimesheetCalculatorTests(unittest.TestCase):
         self.client.close()
         self.engine.dispose()
 
+    def test_get_calculator_contains_only_synthetic_examples(self):
+        response = self.client.get("/timesheets/calculator")
+        self.assertEqual(response.status_code, 200)
+        employees = response.json()["employees"]
+        self.assertEqual(set(employees), {"Demo Staff A", "Demo Staff B"})
+        self.assertEqual(employees["Demo Staff A"]["periods"][0]["summary"]["total_pay"], 800)
+
     @patch("openpyxl.load_workbook")
-    @patch("app.routers.timesheets.open", new_callable=mock_open, read_data=b"fake excel file data")
-    @patch("os.path.exists", return_value=True)
-    def test_get_calculator_endpoint_success(self, mock_exists, mock_open_file, mock_load_wb):
+    def test_supported_workbook_parser(self, mock_load_wb):
         mock_wb = MagicMock()
-        mock_wb.sheetnames = ["Che", "Cash Advance Summary", "Settings"]
+        mock_wb.sheetnames = ["Demo Staff A", "Cash Advance Summary", "Settings"]
         mock_wb.__getitem__.side_effect = lambda name: make_mock_sheet(name)
         mock_load_wb.return_value = mock_wb
 
-        response = self.client.get("/timesheets/calculator")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        
-        self.assertIn("Che", data["employees"])
-        che = data["employees"]["Che"]
-        self.assertEqual(che["employee_name"], "Che")
-        self.assertEqual(len(che["periods"]), 2)
+        from app.routers.timesheets import parse_timesheet_excel_bytes
+        data = parse_timesheet_excel_bytes(b"synthetic mocked workbook")
+        self.assertIn("Demo Staff A", data["employees"])
+        staff = data["employees"]["Demo Staff A"]
+        self.assertEqual(staff["employee_name"], "Demo Staff A")
+        self.assertEqual(len(staff["periods"]), 2)
         
         # Verify first period
-        p1 = che["periods"][0]
+        p1 = staff["periods"][0]
         self.assertEqual(p1["period_name"], "2026-07-01 TO 2026-07-15")
         self.assertEqual(len(p1["shifts"]), 15)
         self.assertEqual(p1["shifts"][0]["date"], "2026-07-01")
@@ -148,17 +151,17 @@ class TimesheetCalculatorTests(unittest.TestCase):
         self.assertEqual(p1["summary"]["allowances"][0]["amount"], 100.0)
 
         # Verify cash advances
-        self.assertEqual(len(che["cash_advances"]), 1)
-        self.assertEqual(che["cash_advances"][0]["date"], "2026-07-05")
-        self.assertEqual(che["cash_advances"][0]["amount"], 1000.0)
-        self.assertEqual(che["cash_advances"][0]["status"], "Done")
+        self.assertEqual(len(staff["cash_advances"]), 1)
+        self.assertEqual(staff["cash_advances"][0]["date"], "2026-07-05")
+        self.assertEqual(staff["cash_advances"][0]["amount"], 1000.0)
+        self.assertEqual(staff["cash_advances"][0]["status"], "Done")
 
     @patch("openpyxl.load_workbook")
     @patch("shutil.copyfileobj")
     @patch("builtins.open")
     def test_upload_calculator_endpoint_success(self, mock_open, mock_copyfileobj, mock_load_wb):
         mock_wb = MagicMock()
-        mock_wb.sheetnames = ["Che"]
+        mock_wb.sheetnames = ["Demo Staff A"]
         mock_wb.__getitem__.side_effect = lambda name: make_mock_sheet(name)
         mock_load_wb.return_value = mock_wb
 
@@ -170,5 +173,5 @@ class TimesheetCalculatorTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("Che", data["employees"])
-        self.assertEqual(data["employees"]["Che"]["employee_name"], "Che")
+        self.assertIn("Demo Staff A", data["employees"])
+        self.assertEqual(data["employees"]["Demo Staff A"]["employee_name"], "Demo Staff A")

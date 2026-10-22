@@ -354,9 +354,10 @@ def parse_timesheet_excel_bytes(file_bytes: bytes) -> dict:
         return ""
 
     for sheetname in wb.sheetnames:
-        if sheetname not in ('Che', 'Karen', 'Ren', 'Rica'):
-            continue
         ws = wb[sheetname]
+        staff_header = ws['B1'].value
+        if not isinstance(staff_header, str) or not staff_header.startswith('Staff:'):
+            continue
         
         staff_name = sheetname
         staff_title = ws['B1'].value or f"Staff: {sheetname}"
@@ -581,25 +582,12 @@ def parse_timesheet_excel_bytes(file_bytes: bytes) -> dict:
 
 @router.get("/calculator", response_model=schemas.TimesheetCalculatorResponse)
 def get_calculator_data():
-    import os
-    paths = [
-        r"C:\Users\aaron\Downloads\Staff Timesheet Calculator.xlsx",
-        "backend/app/resources/Staff Timesheet Calculator.xlsx",
-        "app/resources/Staff Timesheet Calculator.xlsx"
-    ]
-    filepath = None
-    for p in paths:
-        if os.path.exists(p):
-            filepath = p
-            break
-    if not filepath:
-        raise HTTPException(status_code=404, detail="Timesheet calculator Excel file not found.")
-    try:
-        with open(filepath, "rb") as f:
-            content = f.read()
-        return parse_timesheet_excel_bytes(content)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to parse timesheet calculator: {str(exc)}")
+    import json
+    from pathlib import Path
+
+    # Deliberately synthetic public examples; never bundle a private payroll file.
+    sample_path = Path(__file__).resolve().parents[1] / "resources" / "demo-timesheets.json"
+    return json.loads(sample_path.read_text(encoding="utf-8"))
 
 
 @router.post("/calculator/upload", response_model=schemas.TimesheetCalculatorResponse)
