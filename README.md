@@ -1,144 +1,72 @@
 # H+H Hub — food operations prototype
 
-A portfolio prototype exploring inventory, recipe costing, purchasing, consignment, market sales and reporting with Next.js, FastAPI and PostgreSQL. Implementation was AI-assisted and reviewed through workflow and regression testing.
+An AI-assisted portfolio prototype exploring inventory, recipe costing, purchasing, consignment, market sales and reporting with Next.js, FastAPI and SQLAlchemy.
 
-## Public demo status — October 22, 2026
+[Case study](https://aarontagapan.vercel.app/work/hh-hub) · [Hosted demo](https://food-operations-erp-demo.vercel.app)
 
-The deployed API health check returns HTTP 503. The review branch replaces the misleading guest-entry flow with a maintenance page and makes database failures return a generic public message. It does not restore database connectivity or implement authenticated guest access.
+## Public status — October 22, 2026
 
-Before reopening the demo, provision an isolated database with synthetic records, verify backend connectivity and implement genuine server-authorized demo sessions. Do not use private production credentials or data. Local tests use SQLite and do not establish PostgreSQL deployment health.
+The public demo is under maintenance. The entry page explains the limitation and links to the case study and source. Backend unavailability returns a generic public error. This release does not restore database connectivity or create authenticated guest sessions.
 
-[Case study](https://aarontagapan.vercel.app/work/hh-hub) · [Public repository](https://github.com/Aaron840588/food-operations-erp-demo)
+Before reopening, provision an isolated database containing synthetic records, verify connectivity and implement server-authorized guest sessions. Never connect private production records or credentials to this public demo. SQLite regression results do not establish PostgreSQL hosting health.
 
-The architecture notes below describe inherited implementation patterns, not an independent security certification or a guarantee that the public deployment works.
+## Stack and architecture
 
----
+- Frontend: Next.js 16.4.2, React 19.2.4, TypeScript, Tailwind CSS, SWR.
+- Backend: Python 3.12, FastAPI, Pydantic, SQLAlchemy; exact versions in `backend/requirements.txt`.
+- Deployment: root `vercel.json` routes `/api/*` to FastAPI and other requests to Next.js.
+- Authentication: server-enforced role checks, in-memory access tokens, HttpOnly refresh cookies.
+- Stock and financial workflows preserve FIFO handling, immutable sale snapshots and dedicated idempotent Market Event offline handling. Generic mutation replay is prohibited.
+- CORS uses an explicit origin allowlist. Public 500-level errors omit internal exception details.
+- The timesheet calculator uses fictional JSON examples in `backend/app/resources/demo-timesheets.json`.
 
-## 🔒 Security Architecture & Privacy Standards
+These are implementation patterns, not a certification that every inherited feature or external integration is ready for public use.
 
-The application includes the following authentication and data-handling patterns:
+## Local setup
 
-### 1. Zero Hardcoded Secrets
-- All environment variables (Database URIs, JWT secrets, CORS allowlists, service account identifiers) are injected dynamically via Vercel Production Environment and local `.env` files (enforced by `.gitignore`).
-- **Keyless Google Integration**: Workload Identity Federation uses short-lived Vercel OIDC tokens for Google Sheets ingestion—no static private keys or service account credentials are stored in the repo or browser bundle.
+Use Node.js 24 and Python 3.12. Clone this public repository:
 
-### 2. Authentication & Data Minimization
-- **Token Security**: Short-lived JWT access tokens remain exclusively in-memory; refresh tokens are stored in secure `HttpOnly`, `SameSite=Lax`, HTTPS cookies.
-- **Role-Based Access Control (RBAC)**: API routes strictly enforce `require_owner` for financial reporting, cost structures, and system administration. Staff roles receive stripped schemas omitting supplier costs, margins, and owner totals.
-
-### 3. Financial Write Safety & Offline Idempotency
-- **No Generic Mutation Replay**: Administrative, inventory, and financial writes require online server validation and are never stored in generic offline queues.
-- **Isolated Market POS Offline Journal**: Offline cashier sales operate on a dedicated `hh_market_events_offline` IndexedDB instance using stable UUID `client_reference` tags to prevent duplicate transaction application during network recovery.
-- **Immutable Transaction Snapshots**: Historical consignment, reseller, and event sales retain immutable price and cost snapshots to ensure historical financial truth cannot be rewritten by subsequent product price updates.
-
----
-
-## 🛠️ System Architecture & Technology Stack
-
-```
-                                  ┌───────────────────────────┐
-                                  │   Next.js 16 App Router   │
-                                  │ (React 19 / Tailwind CSS) │
-                                  └─────────────┬─────────────┘
-                                                │ Same-Origin /api
-                                  ┌─────────────▼─────────────┐
-                                  │      FastAPI Backend      │
-                                  │   (Python 3.12 / Async)   │
-                                  └─────────────┬─────────────┘
-                                                │ SQLAlchemy 2.0 ORM
-                                  ┌─────────────▼─────────────┐
-                                  │  Supabase PostgreSQL 17   │
-                                  │ (45 Tables / Transaction) │
-                                  └───────────────────────────┘
+```sh
+git clone https://github.com/Aaron840588/food-operations-erp-demo.git
+cd food-operations-erp-demo
+python -m venv .venv
 ```
 
-| Layer | Technologies & Specifications |
-|---|---|
-| **Frontend** | Next.js `16.2.12` App Router, React `19.2.4`, Turbopack, Tailwind CSS v4, SWR |
-| **Backend** | FastAPI `0.139.2`, Python 3.12, SQLAlchemy `2.0.28` (45 unified models) |
-| **Database** | Supabase PostgreSQL `17.6` (Production), SQLite (Local Dev/Tests) |
-| **Authentication** | Passcode hash verification, JWT in-memory, secure HttpOnly refresh cookies |
-| **Testing** | Python `unittest` suite (150 tests), Next.js regression tests, TypeScript strict no-emit |
+Activate the environment (`.\.venv\Scripts\Activate.ps1` in PowerShell), then:
 
----
+```sh
+pip install -r backend/requirements.txt
+cd frontend
+npm ci
+npm run dev
+```
 
-## ✨ Core Modules & Business Capabilities
+For a local backend, set `DATABASE_URL` to an isolated database and generate a local `JWT_SECRET`; use environment variables rather than committing values. Run `uvicorn backend.app.main:app --reload` from the repository root. The frontend development proxy targets localhost:8000. Review `.env.example` for optional integrations; placeholder credentials must be replaced locally and must never be committed. No private cloud integration is needed for the regression suite.
 
-- **📊 Owner Executive Dashboard**: Real-time Asian/Manila weekly financial overview, recognized revenue, direct cost composition, contribution margins, Action Center alerts, and data confidence metrics.
-- **🎪 Market Events & POS**: Smart recurring event series collapsing, live booth stock allocation, multi-payor checkout (Cash/GCash/Custom), tip tracking, stock loadout manifest generator, and 1-click printable closeout reports.
-- **🏪 Consignment & Wholesale POS**: Partner discount matrix, whole-peso rounding, automated DR generation, sticky-column dispatch matrix, and linked production batch tracking.
-- **📋 Production Planner & BOM Costing**: Multi-level recursive bill of materials (BOM), automated material shortage calculation from Market Event targets, FIFO stock consumption, and batch yield reconciliation.
-- **📦 Public Pre-Order Portal**: Customer-facing catalog (`/preorder/[publicToken]`) with server-enforced positive price validation and mobile-optimized bottom sheet review.
-- **⏱️ Staff Operations & Timesheets**: Guided inventory audit workflows, warehouse transfers (Main Facility mirror sync), task checklists, and shift clock-in/out logs.
+## Validation
 
----
-
-## ⚡ Local Setup & Development
-
-### Prerequisites
-- Node.js `v20+` & npm
-- Python `3.12+`
-
-### Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Aaron840588/H-H.git
-   cd H-H
-   ```
-
-2. **Backend Setup**:
-   ```bash
-   # Create and activate virtual environment
-   python -m venv backend/venv
-   # Windows PowerShell:
-   .\backend\venv\Scripts\Activate.ps1
-
-   # Install requirements
-   pip install -r backend/requirements.txt
-   ```
-
-3. **Frontend Setup**:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-4. **Environment Configuration**:
-   Copy `.env.example` to `.env` and configure local values:
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Run Development Servers**:
-   - Backend: `uvicorn backend.app.main:app --reload` (Runs on `http://127.0.0.1:8000`)
-   - Frontend: `cd frontend && npm run dev` (Runs on `http://localhost:3000`)
-
----
-
-## 🧪 Quality Assurance & Test Verification
-
-Before any code is committed, the full verification suite must pass cleanly:
+From the root with the virtual environment active (PowerShell):
 
 ```powershell
-# 1. Backend Unittest Suite (150 tests)
-$env:PYTHONPATH="backend"; python -m unittest discover -s backend/tests -v
-
-# 2. Frontend Regression & Build Checks
+$env:PYTHONPATH = 'backend'
+$env:DATABASE_URL = 'sqlite://'
+$env:JWT_SECRET = [guid]::NewGuid().ToString() + [guid]::NewGuid().ToString()
+python -m unittest discover -s backend/tests -v
+python -m pip_audit -r backend/requirements.txt
 cd frontend
-npm run test
+npm test
 npm run lint
 npx tsc --noEmit
 npm run build
 npm audit --omit=dev
 ```
 
----
+Install `pip-audit` separately for the dependency scan. Keep `backend/requirements.txt` and `backend/app/requirements.txt` identical. CI verifies both manifests and runs these checks.
 
-## 📜 License & Compliance
+The October 22 run passed 156 backend tests, 8 frontend tests, lint, TypeScript, build and production dependency audits. Five development-only ESLint dependency findings remain. See [release notes](RELEASE_NOTES.md), [engineering constraints](AGENTS.md), [current context](PROJECT_CONTEXT.md) and [documentation index](docs/README.md).
 
-© 2026 Handmade+Homemade. All rights reserved. Built for portfolio presentation and operational excellence.
+## Privacy and license
 
-## Public-source privacy audit
+Private payroll workbooks, deployment/chat transcripts and stale backups were removed from the current source. Earlier Git commits may retain removed material; source cleanup does not erase history. Never upload private payroll, client records or backups to the demo.
 
-Private payroll material, deployment/chat transcripts and stale backup files have been removed from the review branch. The calculator now uses named synthetic JSON examples. Past Git commits may still contain removed material; branch cleanup does not erase history. Do not upload private payroll or connect a private production database to this public demo.
+This public repository is provided for portfolio review, not represented as an open-source licensed product. Existing copyright/license notices apply.

@@ -1,3 +1,5 @@
+> Historical implementation reference. For the October 22, 2026 public demo status and release scope, see the repository root README.md and RELEASE_NOTES.md. Dated readiness claims below do not establish current hosted functionality.
+
 # Controlled Google Sheets Synchronization
 
 This document is the implementation contract for the one-way, controlled Google Sheets integration. The owner may temporarily use the approved Partner Inventory Sheet as the source for SRP and reseller price while learning the Hub. H+H Hub remains authoritative for operational and transactional records.

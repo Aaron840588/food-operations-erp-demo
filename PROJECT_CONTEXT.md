@@ -15,7 +15,7 @@ This repository is an AI-assisted food-operations portfolio prototype. It must c
 
 ## Public status
 
-The hosted API is unavailable. The review branch uses an honest maintenance entry. Database recovery and real server-authorized guest sessions are required before reopening the demo. Never reuse a private production database or credentials.
+The hosted API is unavailable. The public entry uses an honest maintenance page. Database recovery and real server-authorized guest sessions are required before reopening the demo. Never reuse a private production database or credentials.
 
 The built-in timesheet calculator contains explicitly synthetic JSON examples. Uploaded workbooks are parsed in memory for an authorized session; never commit uploads. All original private payroll material has been removed from the branch, but historical commits may retain it.
 
