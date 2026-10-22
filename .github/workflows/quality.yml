@@ -25,6 +25,10 @@ jobs:
         working-directory: frontend
         run: npm audit --omit=dev
 
+      - name: Test frontend
+        working-directory: frontend
+        run: npm run test
+
       - name: Lint frontend
         working-directory: frontend
         run: npm run lint
@@ -40,6 +44,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
+
+      - name: Check Python dependency manifests agree
+        run: cmp backend/requirements.txt backend/app/requirements.txt
 
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt pip-audit==2.10.1

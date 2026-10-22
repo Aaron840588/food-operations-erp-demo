@@ -323,6 +323,23 @@ app = FastAPI(
     description="Operations and business management API for H+H",
 )
 
+# Preserve useful client errors, but never disclose SQL, connection strings or
+# internal exception messages in public server-error responses.
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(StarletteHTTPException)
+async def public_http_error(request: Request, exc: StarletteHTTPException):
+    if exc.status_code >= 500:
+        logger.error("Request failed with server status %s at %s", exc.status_code, request.url.path)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": "Service temporarily unavailable. Please try again later."},
+            headers=exc.headers,
+        )
+    return await http_exception_handler(request, exc)
+
 SYSTEM_UPDATE_TIMESTAMP = "release-2.8.0-2026-08-04"
 
 # Keep refresh cookies HTTPS-only by default. Local development can opt out
@@ -523,14 +540,12 @@ def sync_warehouse_stocks_on_startup():
 
 # CORS middleware to allow Next.js frontend calls
 env_mode = os.getenv("ENVIRONMENT", os.getenv("VERCEL_ENV", os.getenv("ENV", "development")))
-if env_mode == "production":
-    origins = [
-        "https://hh-portal.vercel.app",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ]
-else:
-    origins = ["*"]
+configured_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+origins = [origin.strip().rstrip("/") for origin in configured_origins.split(",") if origin.strip()]
+if not origins:
+    origins = ["https://food-operations-erp-demo.vercel.app"]
+    if env_mode != "production":
+        origins.extend(["http://localhost:3000", "http://127.0.0.1:3000"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -551,7 +566,11 @@ async def remove_api_prefix(request: Request, call_next):
     path = request.scope.get("path", "")
     if path.startswith("/api"):
         request.scope["path"] = path[4:]
-    return await call_next(request)
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
 
 # Register routers (protected by authentication)
 app.include_router(costing.router, dependencies=[Depends(auth.require_owner)])
@@ -2347,11 +2366,12 @@ def health_check(db: Session = Depends(get_db)):
             "database": "online",
             "environment": os.getenv("ENVIRONMENT", os.getenv("VERCEL_ENV", "development"))
         }
-    except Exception as e:
+    except Exception:
+        logger.error("Database health check failed; database service unavailable.")
         raise HTTPException(
             status_code=503,
-            detail=f"Database connection error: {str(e)}"
-        )
+            detail="Database service temporarily unavailable."
+        ) from None
 
 
 @app.get("/version")

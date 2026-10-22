@@ -513,6 +513,8 @@ export default function LayoutClient({ children }: LayoutClientProps) {
               localStorage.removeItem("hh_user_role");
               clearFinancialCaches();
             } catch { /* iOS Private Browsing — ignore */ }
+            // A fresh document drops all in-memory user caches after logout.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = "/login";
           }}
           className="w-full py-2 bg-white hover:bg-slate-50 text-[#8a7560] hover:text-slate-900 text-xs font-heading font-black rounded-xl transition-all border border-slate-300 cursor-pointer flex items-center justify-center gap-2 shadow-sm"

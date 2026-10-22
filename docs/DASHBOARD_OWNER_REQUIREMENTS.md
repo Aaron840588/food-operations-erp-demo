@@ -1,3 +1,5 @@
+> Historical implementation reference. For the October 22, 2026 public demo status and release scope, see the repository root README.md and RELEASE_NOTES.md. Dated readiness claims below do not establish current hosted functionality.
+
 # H+H Hub Owner Dashboard — Product Requirements and Implementation Guide
 
 > **Document status:** Implemented in H+H Hub v2.4.0

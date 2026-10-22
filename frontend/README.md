@@ -1,8 +1,10 @@
+> Public demo release, October 22, 2026: the entry is a maintenance page. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
+
 # H+H Hub frontend
 
 Current application version: **2.8.0**.
 
-Next.js `16.2.12` App Router client for H+H Hub. The frontend and FastAPI backend deploy as one Vercel project from the repository root.
+Next.js `16.4.2` App Router client for H+H Hub. The frontend and FastAPI backend deploy as one Vercel project from the repository root.
 
 ## Local development
 

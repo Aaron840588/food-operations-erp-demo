@@ -1,3 +1,5 @@
+> Historical implementation reference. For the October 22, 2026 public demo status and release scope, see the repository root README.md and RELEASE_NOTES.md. Dated readiness claims below do not establish current hosted functionality.
+
 # H+H Hub — Business Context Handbook
 
 H+H Hub is Handmade+Homemade's operations platform for premium jarred spreads, sauces, sandwiches, salads, and event sales. Version **2.6.1** links the operating chain from product and recipe setup through purchasing, inventory, production, sales, delivery, and owner profitability review.

@@ -1,3 +1,5 @@
+> Historical implementation reference. For the October 22, 2026 public demo status and release scope, see the repository root README.md and RELEASE_NOTES.md. Dated readiness claims below do not establish current hosted functionality.
+
 # H+H Hub Table and Product UI Audit
 
 Audit date: 2026-07-17

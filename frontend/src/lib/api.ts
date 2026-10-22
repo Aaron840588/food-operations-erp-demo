@@ -1278,6 +1278,8 @@ async function fetchJson(path: string, options?: RequestInit): Promise<any> {
           localStorage.removeItem("hh_user_name");
           localStorage.removeItem("hh_user_role");
         } catch {}
+        // API-layer auth failure requires a fresh document to discard user-scoped state.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login";
       }
     }
