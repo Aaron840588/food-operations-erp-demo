@@ -2347,11 +2347,12 @@ def health_check(db: Session = Depends(get_db)):
             "database": "online",
             "environment": os.getenv("ENVIRONMENT", os.getenv("VERCEL_ENV", "development"))
         }
-    except Exception as e:
+    except Exception:
+        logger.error("Database health check failed; database service unavailable.")
         raise HTTPException(
             status_code=503,
-            detail=f"Database connection error: {str(e)}"
-        )
+            detail="Database service temporarily unavailable."
+        ) from None
 
 
 @app.get("/version")

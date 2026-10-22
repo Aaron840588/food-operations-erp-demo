@@ -1,16 +1,22 @@
-# Handmade+Homemade (H+H) Hub — Enterprise Food Operations & ERP Platform
+# H+H Hub — food operations prototype
 
-[![Security & Correctness](https://img.shields.io/badge/Security-Audit_Passed-emerald?style=for-the-badge&logo=shield)](file:///PROJECT_CONTEXT.md#6-security-and-correctness-invariants)
-[![Version](https://img.shields.io/badge/Version-v2.8.0-blue?style=for-the-badge)](file:///CHANGELOG.md)
-[![Stack](https://img.shields.io/badge/Stack-Next.js_16_%7C_FastAPI_%7C_PostgreSQL-darkviolet?style=for-the-badge)](file:///PROJECT_CONTEXT.md#2-current-stack)
+A portfolio prototype exploring inventory, recipe costing, purchasing, consignment, market sales and reporting with Next.js, FastAPI and PostgreSQL. Implementation was AI-assisted and reviewed through workflow and regression testing.
 
-**H+H Hub** is a full-stack, enterprise-grade Operations Management and ERP platform custom-architected for **Handmade+Homemade**. It unifies multi-channel sales (Market Events, Wholesale Resellers, Consignment Partners, and Public Pre-Orders), recipe costing, inventory control, automated material requirement planning (MRP), staff timesheets, and owner financial analytics into a single high-performance system.
+## Public demo status — October 22, 2026
+
+The deployed API health check returns HTTP 503. The review branch replaces the misleading guest-entry flow with a maintenance page and makes database failures return a generic public message. It does not restore database connectivity or implement authenticated guest access.
+
+Before reopening the demo, provision an isolated database with synthetic records, verify backend connectivity and implement genuine server-authorized demo sessions. Do not use private production credentials or data. Local tests use SQLite and do not establish PostgreSQL deployment health.
+
+[Case study](https://aarontagapan.vercel.app/work/hh-hub) · [Public repository](https://github.com/Aaron840588/food-operations-erp-demo)
+
+The architecture notes below describe inherited implementation patterns, not an independent security certification or a guarantee that the public deployment works.
 
 ---
 
 ## 🔒 Security Architecture & Privacy Standards
 
-H+H Hub enforces zero-trust security boundaries to protect commercial financial data, customer privacy, and infrastructure credentials:
+The application includes the following authentication and data-handling patterns:
 
 ### 1. Zero Hardcoded Secrets
 - All environment variables (Database URIs, JWT secrets, CORS allowlists, service account identifiers) are injected dynamically via Vercel Production Environment and local `.env` files (enforced by `.gitignore`).

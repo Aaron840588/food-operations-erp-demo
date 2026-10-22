@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { api, type DiscountTierOut, type UserOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
@@ -36,6 +37,7 @@ import {
 
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"tiers" | "backup" | "sheets" | "users" | "notifications" | "updates">("tiers");
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -221,7 +223,7 @@ export default function SettingsPage() {
         <p className="text-sm text-slate-500 mt-3 mb-8 leading-relaxed max-w-md mx-auto">
           System preferences, database overrides, and user registrations are only accessible to Owner accounts. Please log in with owner passcode privileges.
         </p>
-        <Button variant="outline" size="lg" className="h-12 text-sm font-bold bg-white" onClick={() => window.location.href = "/"}>
+        <Button variant="outline" size="lg" className="h-12 text-sm font-bold bg-white" onClick={() => router.push("/")}>
           Back to Dashboard
         </Button>
       </div>
