@@ -4,11 +4,18 @@ An AI-assisted portfolio prototype exploring inventory, recipe costing, purchasi
 
 [Case study](https://aarontagapan.vercel.app/work/hh-hub) · [Hosted demo](https://food-operations-erp-demo.vercel.app)
 
-## Public status — October 22, 2026
+## Public demo — October 23, 2026
 
-The public demo is under maintenance. The entry page explains the limitation and links to the case study and source. Backend unavailability returns a generic public error. This release does not restore database connectivity or create authenticated guest sessions.
+The public entry opens a self-contained fictional workspace at `/demo`. No account, database, credentials or cloud services are required. Changes exist only in React memory and reset on refresh or via **Reset demo**.
 
-Before reopening, provision an isolated database containing synthetic records, verify connectivity and implement server-authorized guest sessions. Never connect private production records or credentials to this public demo. SQLite regression results do not establish PostgreSQL hosting health.
+- **Inventory:** search finished goods and receive sample stock with quantity validation.
+- **Orders:** queue, fulfil and cancel orders for fixed fictional customers. Fulfilment checks and deducts stock once; prices and costs are snapshotted when queued.
+- **Overview:** sales, gross profit, stock totals and activity reflect the current session.
+- **Costing:** explore sample batch costs, selling prices and gross margins independently of orders.
+
+Try receiving 10 tomato-sauce jars, fulfilling order #1002, then returning to Overview. The workspace is a focused simulation, not the full ERP: it excludes ingredient purchasing, FIFO lots, production, payroll, authentication and real payments. Gross profit excludes labour, overhead, tax and delivery.
+
+The separate database-backed prototype remains unavailable. Its protected routes and API authorization are unchanged; reopening those requires an isolated synthetic database and server-authorized guest sessions. Never connect private production records or credentials to this public demo.
 
 ## Stack and architecture
 
@@ -41,7 +48,7 @@ npm ci
 npm run dev
 ```
 
-For a local backend, set `DATABASE_URL` to an isolated database and generate a local `JWT_SECRET`; use environment variables rather than committing values. Run `uvicorn backend.app.main:app --reload` from the repository root. The frontend development proxy targets localhost:8000. Review `.env.example` for optional integrations; placeholder credentials must be replaced locally and must never be committed. No private cloud integration is needed for the regression suite.
+The `/demo` route works without starting a backend. For the separate local backend, set `DATABASE_URL` to an isolated database and generate a local `JWT_SECRET`; use environment variables rather than committing values. Run `uvicorn backend.app.main:app --reload` from the repository root. The frontend development proxy targets localhost:8000. Review `.env.example` for optional integrations; placeholder credentials must be replaced locally and must never be committed. No private cloud integration is needed for the regression suite.
 
 ## Validation
 

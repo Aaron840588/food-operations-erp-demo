@@ -1,8 +1,8 @@
 # H+H public demo documentation
 
-Updated October 22, 2026.
+Updated October 23, 2026.
 
-Read the [root README](../README.md), [current context](../PROJECT_CONTEXT.md), [release notes](../RELEASE_NOTES.md), and [engineering rules](../AGENTS.md) first. These describe the public synthetic demo and its maintenance state.
+Read the [root README](../README.md), [current context](../PROJECT_CONTEXT.md), [release notes](../RELEASE_NOTES.md), and [engineering rules](../AGENTS.md) first. These describe the self-contained fictional demo and the separate unavailable backend.
 
 The remaining documents in this directory are inherited architecture, business-rule, UI and historical audit references. Their dated deployment claims are not evidence of current public service health. Deleted private transcripts, payroll workbooks and infrastructure notes are deliberately not linked or required.
 

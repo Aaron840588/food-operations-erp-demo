@@ -1,4 +1,4 @@
-> Public demo release, October 22, 2026: the entry is a maintenance page. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
+> Public demo release, October 23, 2026: the entry redirects to the self-contained fictional `/demo` workspace. No backend is required for this route. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
 
 # H+H Hub frontend
 
@@ -8,14 +8,14 @@ Next.js `16.4.2` App Router client for H+H Hub. The frontend and FastAPI backend
 
 ## Local development
 
-Run the backend separately, then:
+For the fictional demo, run:
 
 ```powershell
 cd frontend
 npm.cmd run dev
 ```
 
-The client uses same-origin `/api` requests. During local development, `next.config.ts` rewrites `/api/*` to `http://127.0.0.1:8000`; `NEXT_PUBLIC_API_URL` may explicitly override the base when required.
+The separate authenticated prototype needs a backend and uses same-origin `/api` requests. During local development, `next.config.ts` rewrites `/api/*` to `http://127.0.0.1:8000`; `NEXT_PUBLIC_API_URL` may explicitly override the base when required.
 
 ## Quality checks
 
