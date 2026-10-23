@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --experimental-strip-types src/lib/consignmentPricing.test.mts src/lib/marketEventForm.test.mts src/lib/offlinePolicy.test.mts src/lib/utils.test.mts"
+    "test": "node --test --experimental-strip-types src/lib/consignmentPricing.test.mts src/lib/marketEventForm.test.mts src/lib/offlinePolicy.test.mts src/lib/utils.test.mts src/lib/fictionalDemo.test.mts"
   },
   "dependencies": {
     "lucide-react": "^1.23.0",

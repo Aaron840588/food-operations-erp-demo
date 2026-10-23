@@ -15,7 +15,7 @@ This repository is an AI-assisted food-operations portfolio prototype. It must c
 
 ## Public status
 
-The hosted API is unavailable. The public entry uses an honest maintenance page. Database recovery and real server-authorized guest sessions are required before reopening the demo. Never reuse a private production database or credentials.
+The public entry and `/login` redirect to `/demo`, a fictional React-memory workspace for inventory, order fulfilment and costing. It has no API client, auth, synchronization, persistence or private integrations. The public route bypasses the authenticated layout entirely. All data resets on refresh. The separate hosted API remains unavailable; database recovery and server-authorized guest sessions are still required before exposing the full ERP. Never reuse private production data or credentials. Preserve the isolated demo boundary.
 
 The built-in timesheet calculator contains explicitly synthetic JSON examples. Uploaded workbooks are parsed in memory for an authorized session; never commit uploads. All original private payroll material has been removed from the branch, but historical commits may retain it.
 
