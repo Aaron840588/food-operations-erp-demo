@@ -12,16 +12,16 @@ import {
   isPublicRoute,
   isRouteAllowedForRole,
 } from "@/lib/routeAccess";
-import { 
-  LayoutDashboard, 
-  ChefHat, 
-  CalendarRange, 
-  Truck, 
-  Receipt, 
-  Package, 
-  ClipboardCheck, 
+import {
+  LayoutDashboard,
+  ChefHat,
+  CalendarRange,
+  Truck,
+  Receipt,
+  Package,
+  ClipboardCheck,
   Clock3,
-  Menu, 
+  Menu,
   X,
   LogOut,
   Settings,
@@ -195,7 +195,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
       queueMicrotask(() => {
         setIsOnline(navigator.onLine);
       });
-      
+
       const handleOnline = () => {
         setIsOnline(true);
       };
@@ -355,7 +355,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
         }
       }
     };
-    
+
     void checkAuth();
     return () => {
       cancelled = true;
@@ -562,7 +562,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
             onClick={() => setIsMobileOpen(false)}
             className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity duration-300"
           ></div>
-          
+
           {/* Slide-out Drawer Panel */}
           <aside
             ref={mobileDrawerRef}
@@ -571,7 +571,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
             aria-label="Quick navigation"
             className="app-safe-drawer relative flex h-full w-[min(88vw,20rem)] flex-col border-r border-[#ece5da] bg-white shadow-xl animate-slide-in"
           >
-            <button 
+            <button
               ref={mobileCloseRef}
               onClick={() => setIsMobileOpen(false)}
               aria-label="Close navigation"
@@ -590,19 +590,19 @@ export default function LayoutClient({ children }: LayoutClientProps) {
         <header className="app-safe-header h-16 border-b border-[#ece5da] bg-white/95 backdrop-blur-sm flex items-center justify-between px-3 sm:px-6 shrink-0 print:hidden shadow-xs z-20">
           <div className="flex items-center gap-4">
             {/* Hamburger Button for mobile */}
-            <button 
+            <button
               onClick={() => setIsMobileOpen(true)}
               aria-label="Open navigation"
               className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 lg:hidden cursor-pointer touch-optimize"
             >
               <Menu size={24} />
             </button>
-            
+
             <h1 className="max-w-[13rem] truncate font-heading text-lg font-bold leading-none text-slate-900 sm:max-w-none sm:text-xl">
               {getPageTitle(pathname)}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
             <button
               type="button"
@@ -622,14 +622,14 @@ export default function LayoutClient({ children }: LayoutClientProps) {
               <Bell size={18} />
               {actionCenterItems.length > 0 && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-rose-500" />}
             </button>
-            
+
             {userRole && (
               <div className="hidden md:flex items-center gap-2 bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-250">
                 <UserCheck size={14} className="text-primary" />
                 <span className="tracking-wide font-bold capitalize">{userRole}</span>
               </div>
             )}
-            
+
             {isOnline ? (
               <div className="flex h-10 items-center gap-2 bg-teal-light text-teal px-3 rounded-xl border border-teal/25" aria-label="System online">
                 <div className="w-2 h-2 rounded-full bg-teal animate-pulse"></div>
@@ -719,7 +719,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
       {/* GLOBAL COMMAND PALETTE (CTRL+K) OVERLAY */}
       {isCmdOpen && (
         <div className="app-safe-overlay fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-250 flex items-start justify-center pt-24 px-4">
-          <div 
+          <div
             className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-fade-in animate-scale-up"
             onKeyDown={(e) => {
               if (e.key === "Escape") setIsCmdOpen(false);
@@ -780,8 +780,8 @@ export default function LayoutClient({ children }: LayoutClientProps) {
                         setIsCmdOpen(false);
                       }}
                       className={`flex w-full items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
-                        isSelected 
-                          ? "bg-primary-light text-primary font-bold" 
+                        isSelected
+                          ? "bg-primary-light text-primary font-bold"
                           : "text-[#8a7560] hover:bg-slate-50 hover:text-slate-800"
                       }`}
                     >
