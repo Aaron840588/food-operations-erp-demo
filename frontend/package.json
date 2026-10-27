@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "fake-indexeddb": "^6.2.6",
     "lucide-react": "^1.23.0",
     "next": "^16.4.3",
     "react": "^19.3.1",

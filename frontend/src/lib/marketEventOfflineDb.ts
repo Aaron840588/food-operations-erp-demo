@@ -1,3 +1,6 @@
+import { IDBFactory as MemoryIDBFactory } from 'fake-indexeddb';
+import { PUBLIC_DEMO } from './demoWorkspace';
+
 /**
  * Isolated, local-first persistence for the Market Events cashier.
  *
@@ -2378,4 +2381,8 @@ export function createMarketEventOfflineDb(
   };
 }
 
-export const marketEventOfflineDb = createMarketEventOfflineDb();
+// Preserve the original cashier workflow without writing public sample sales
+// into a persistent browser database. A refresh drops this memory-only factory.
+export const marketEventOfflineDb = createMarketEventOfflineDb(
+  PUBLIC_DEMO ? { indexed_db: new MemoryIDBFactory() } : {},
+);

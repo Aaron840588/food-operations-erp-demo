@@ -12,7 +12,7 @@ The frontend sends serialized operations to `/api/demo-workspace`. Each request 
 
 The public backend defaults to `PUBLIC_DEMO_MODE=true`, ignores configured production database URLs, and skips production startup migrations. The frontend defaults to `NEXT_PUBLIC_DEMO_MODE=true`. A private deployment must explicitly set both flags to `false` and configure a separate database and JWT secret. Never put production credentials or private records into this portfolio deployment.
 
-Google Sheets connections, push subscriptions and private file/photo uploads are deliberately unavailable in the public sample. Their panels explain the limitation. Existing synthetic timesheet calculator examples remain available. Browser downloads contain sample data only. Real device printing, native sharing and external account integrations require separate validation.
+Google Sheets connections, push subscriptions and private file/photo uploads are deliberately unavailable in the public sample. Their panels explain the limitation. Existing synthetic timesheet calculator examples remain available. The Market Events journal uses an in-memory IndexedDB implementation in public mode and resets on refresh. Owner-view JSON backups export the complete fictional workspace and omit password and form-token hash fields. Real device printing, native sharing and external account integrations require separate validation.
 
 The former reduced interface was removed. This release restores the original screens and business logic; it does not claim that private external integrations are connected.
 
@@ -47,7 +47,7 @@ npm ci
 npm run dev
 ```
 
-The `/demo` route works without starting a backend. For the separate local backend, set `DATABASE_URL` to an isolated database and generate a local `JWT_SECRET`; use environment variables rather than committing values. Run `uvicorn backend.app.main:app --reload` from the repository root. The frontend development proxy targets localhost:8000. Review `.env.example` for optional integrations; placeholder credentials must be replaced locally and must never be committed. No private cloud integration is needed for the regression suite.
+The original demo requires both servers. From the repository root, run `uvicorn backend.app.main:app --reload` in a second terminal with the virtual environment active. The frontend development proxy targets localhost:8000. Public mode creates temporary sample SQLite databases automatically; no database URL or private cloud credentials are needed. Review `.env.example` only when configuring a separate private deployment; credentials must stay in local environment variables and must never be committed.
 
 ## Validation
 
@@ -56,6 +56,7 @@ From the root with the virtual environment active (PowerShell):
 ```powershell
 $env:PYTHONPATH = 'backend'
 $env:DATABASE_URL = 'sqlite://'
+$env:PUBLIC_DEMO_MODE = 'false'
 $env:JWT_SECRET = [guid]::NewGuid().ToString() + [guid]::NewGuid().ToString()
 python -m unittest discover -s backend/tests -v
 python -m pip_audit -r backend/requirements.txt
@@ -69,7 +70,7 @@ npm audit --omit=dev
 
 Install `pip-audit` separately for the dependency scan. Keep `backend/requirements.txt` and `backend/app/requirements.txt` identical. CI verifies both manifests and runs these checks.
 
-The October 22 run passed 156 backend tests, 8 frontend tests, lint, TypeScript, build and production dependency audits. Five development-only ESLint dependency findings remain. See [release notes](RELEASE_NOTES.md), [engineering constraints](AGENTS.md), [current context](PROJECT_CONTEXT.md) and [documentation index](docs/README.md).
+CI runs 161 backend tests, 9 frontend helper tests, original-interface browser workflows, lint, TypeScript, build and dependency audits. The October 27 dependency refresh reports zero npm vulnerabilities, including development dependencies. See [release notes](RELEASE_NOTES.md), [engineering constraints](AGENTS.md), [current context](PROJECT_CONTEXT.md) and [documentation index](docs/README.md).
 
 ## Privacy and license
 

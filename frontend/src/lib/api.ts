@@ -1680,9 +1680,8 @@ export const api = {
   }),
   getBackupBlob: async (): Promise<Blob> => {
     if (PUBLIC_DEMO) {
-      const products = await demoRequest('/products');
-      const ingredients = await demoRequest('/raw-ingredients');
-      return new Blob([JSON.stringify({ notice: 'Fictional sample export only', products, ingredients }, null, 2)], { type: 'application/json' });
+      const sample = await demoRequest('/sample-export');
+      return new Blob([JSON.stringify(sample, null, 2)], { type: 'application/json' });
     }
     const token = activeAccessToken;
     const headers: Record<string, string> = {};

@@ -35,7 +35,7 @@ _role: ContextVar[str] = ContextVar("demo_role", default="owner")
 EXCLUDED_TABLES = {"refresh_tokens", "push_subscriptions", "login_rate_limits"}
 TABLES = [table for table in Base.metadata.sorted_tables if table.name not in EXCLUDED_TABLES]
 _capacity = asyncio.Semaphore(8)
-PREFIXES = ("/products", "/raw-ingredients", "/suppliers", "/warehouses", "/inventory-transactions", "/dashboard", "/costing", "/production", "/consignment", "/resellers", "/tasks", "/timesheets", "/gift-sets", "/users", "/preorders", "/mrp", "/market-events")
+PREFIXES = ("/products", "/raw-ingredients", "/suppliers", "/warehouses", "/inventory-transactions", "/dashboard", "/costing", "/production", "/consignment", "/resellers", "/tasks", "/timesheets", "/gift-sets", "/users", "/preorders", "/mrp", "/market-events", "/sample-export")
 
 
 class DemoCall(BaseModel):
@@ -195,6 +195,16 @@ def install_demo_sandbox(app: FastAPI):
                     restore(db, call.state)
                 else:
                     seed(db)
+                if path == '/sample-export':
+                    if call.role != 'owner' or call.method != 'GET':
+                        raise HTTPException(403, 'Sample owner view is required for export.')
+                    encoded = snapshot(db)
+                    rows = json.loads(zlib.decompress(base64.b64decode(encoded)))
+                    for user in rows.get('users', []):
+                        user.pop('hashed_password', None)
+                    for form in rows.get('preorder_forms', []):
+                        form.pop('token_hash', None)
+                    return JSONResponse({'state': encoded, 'data': {'notice': 'Fictional sample data only', 'tables': rows}, 'status': 200}, headers={'Cache-Control': 'no-store'})
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=sandbox, raise_app_exceptions=False), base_url="http://isolated-demo.invalid") as client:
                     response = await client.request(call.method, call.path, json=call.payload)
                 if response.status_code >= 500:

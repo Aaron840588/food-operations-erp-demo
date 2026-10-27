@@ -115,3 +115,30 @@ test("mobile navigation exposes the original application", async ({ page }) => {
     fullPage: true,
   });
 });
+
+test('inventory tabs and sample exports work without private data', async ({ page }) => {
+  const failures: string[] = [];
+  page.on('response', async response => {
+    if (!response.url().includes('/api/demo-workspace')) return;
+    const body = await response.json();
+    if (!response.ok() || body.status >= 400) failures.push(JSON.stringify(body.data ?? body.detail));
+  });
+  await page.goto('/inventory');
+  for (const name of ['FIFO Batches', 'Depletion Forecast', 'Warehouses', 'Audit Log', 'Stock']) {
+    await page.getByRole('tab', { name, exact: true }).click();
+    await page.waitForLoadState('networkidle');
+  }
+  await page.getByRole('link', { name: 'Settings & Users', exact: true }).click();
+  await page.getByRole('tab', { name: 'Database Backups', exact: true }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Download.*Backup/i }).click();
+  const download = await downloadPromise;
+  const { readFile } = await import('node:fs/promises');
+  const file = await download.path();
+  const data = JSON.parse(await readFile(file!, 'utf8'));
+  expect(data.notice).toContain('Fictional');
+  expect(data.tables.product_skus).toHaveLength(3);
+  expect(data.tables.users).toHaveLength(2);
+  expect(JSON.stringify(data)).not.toContain('hashed_password');
+  expect(failures).toEqual([]);
+});

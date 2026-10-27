@@ -6,6 +6,8 @@ Fix Vercel asset routing so Next.js scripts and styles load before the legacy ca
 
 Validation includes the existing backend suite plus sample-isolation, invalid-state, parallel-visitor, staff-permission and connected stock/wholesale/consignment/production regressions. Browser CI exercises original-screen navigation, tasks, sales and mobile navigation. Production evidence must be checked independently after merging.
 
+Restore complete fictional workspace downloads in the original backup panel, omitting password and form-token hash fields. Keep the public Market Events journal in memory so sample sales reset on refresh. Correct product grouping so sauce/spread samples appear in inventory, and remove inherited contact details from invoice templates.
+
 ---
 
 # Fictional interactive demo — October 23, 2026
