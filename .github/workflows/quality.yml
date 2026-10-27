@@ -57,6 +57,30 @@ jobs:
       - name: Compile and test backend
         env:
           JWT_SECRET: ci-test-secret
+          PUBLIC_DEMO_MODE: 'false'
         run: |
           python -m compileall -q backend/app
           PYTHONPATH=backend python -m unittest discover -s backend/tests -v
+
+      - name: Install browser verification dependencies
+        working-directory: frontend
+        run: |
+          pip install uvicorn==0.54.0
+          npx playwright install --with-deps chromium
+
+      - name: Verify original demo in browser
+        env:
+          PUBLIC_DEMO_MODE: 'true'
+          JWT_SECRET: ci-test-secret
+          PYTHONPATH: backend
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/hh-api.log 2>&1 &
+          cd frontend
+          npx playwright test
+
+      - name: Save browser review evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: original-demo-browser-review
+          path: frontend/test-results

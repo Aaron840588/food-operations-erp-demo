@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,27 +8,33 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --experimental-strip-types src/lib/consignmentPricing.test.mts src/lib/marketEventForm.test.mts src/lib/offlinePolicy.test.mts src/lib/utils.test.mts src/lib/fictionalDemo.test.mts"
+    "test": "node --test --experimental-strip-types src/lib/consignmentPricing.test.mts src/lib/marketEventForm.test.mts src/lib/offlinePolicy.test.mts src/lib/utils.test.mts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "fake-indexeddb": "^6.2.6",
     "lucide-react": "^1.23.0",
-    "next": "16.4.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "recharts": "^3.9.2",
     "swr": "^2.4.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "^16.4.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
     "postcss": "8.5.23"
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }

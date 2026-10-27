@@ -1033,7 +1033,7 @@ export default function ResellersPage() {
                 <div>
                   <span className="font-heading font-black text-2xl print:text-lg tracking-widest text-slate-900 block leading-none">H+H HUB</span>
                   <span className="text-[10px] print:text-[8px] text-slate-455 uppercase tracking-widest font-black block mt-2 print:mt-1">PREMIUM SPREADS & FOOD PRODUCTS</span>
-                  <span className="text-xs print:text-[9px] text-slate-400 font-semibold block mt-1 print:mt-0.5">Cambria, Bay, Laguna, Brgy. Sto. Domingo | +63 917 123 4567</span>
+                  <span className="text-xs print:text-[9px] text-slate-400 font-semibold block mt-1 print:mt-0.5">Fictional sample invoice - no payment is collected</span>
                 </div>
                 <div className="text-right text-xs print:text-[10px] font-semibold text-slate-500 space-y-1 print:space-y-0.5">
                   <p>Invoice #: <span className="font-mono font-bold text-slate-800 text-sm print:text-xs">{invoiceData.invoiceNumber}</span></p>
@@ -1117,7 +1117,7 @@ export default function ResellersPage() {
                 <div className="space-y-1.5">
                   <span className="text-xs print:text-[10px] text-slate-500 font-black uppercase tracking-wider block">Payment Instructions</span>
                   <p>Please request payment details from the H+H owner.</p>
-                  <p className="text-[10px] print:text-[8px] text-slate-455 italic">Please email payment receipts to billing@hplusfood.com.</p>
+                  <p className="text-[10px] print:text-[8px] text-slate-455 italic">Fictional sample invoice. No payment or receipt submission is required.</p>
                 </div>
                 <div className="flex flex-col justify-end items-end h-32 print:h-12">
                   <div className="w-56 print:w-44 border-t border-slate-400 text-center pt-3 print:pt-1 text-[10px] print:text-[8px] text-slate-500 font-black uppercase tracking-widest">

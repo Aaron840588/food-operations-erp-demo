@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import packageMetadata from "../../package.json";
 import { api, clearFinancialCaches } from "@/lib/api";
+import { PUBLIC_DEMO, demoRole } from '@/lib/demoWorkspace';
 import {
   getAuthenticatedHomePath,
   getRoleRouteRedirect,
@@ -185,6 +186,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (PUBLIC_DEMO) return;
     api.syncOfflineChanges()
       .then((result) => setDiscardedLegacyActions(result.discarded))
       .catch((error) => console.error("Unable to sanitize the retired offline queue:", error));
@@ -212,6 +214,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   }, []);
 
   useEffect(() => {
+    if (PUBLIC_DEMO) return;
     // Programmatic cleanup of old Service Workers to prevent cache/hydration transition loops on laptop
     if (typeof window !== "undefined" && 'serviceWorker' in navigator) {
       try {
@@ -236,6 +239,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   }, []);
 
   useEffect(() => {
+    if (PUBLIC_DEMO) return;
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.register('/sw.js')
         .then(reg => {
@@ -252,6 +256,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    if (PUBLIC_DEMO) return;
     const checkAppVersion = async () => {
       try {
         const data = await api.getAppVersion();
@@ -333,6 +338,11 @@ export default function LayoutClient({ children }: LayoutClientProps) {
         setCheckingAuth(false);
       };
 
+      if (PUBLIC_DEMO) {
+        const role = demoRole();
+        finishAuthenticatedCheck(role, role === 'owner' ? 'Sample Owner' : 'Sample Staff');
+        return;
+      }
       try {
         const loggedIn = localStorage.getItem("hh_logged_in") === "true";
         if (loggedIn) {
@@ -363,7 +373,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   }, [isPublicPage, pathname, router]);
 
   useEffect(() => {
-    if (isPublicPage || userRole !== "owner" || !isOnline) return;
+    if (PUBLIC_DEMO || isPublicPage || userRole !== "owner" || !isOnline) return;
 
     let cancelled = false;
     const runAutomaticPriceCheck = async () => {
@@ -530,7 +540,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   );
 
   if (isPublicPage) {
-    return <>{children}</>;
+    return <>{PUBLIC_DEMO && <p className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">Fictional sample form. Use sample contact details only. No real order or payment is processed.</p>}{children}</>;
   }
 
   const roleRedirect = userRole ? getRoleRouteRedirect(userRole, pathname) : null;
@@ -586,6 +596,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
 
       {/* 3. MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden print:h-auto print:overflow-visible">
+        {PUBLIC_DEMO && <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-950 print:hidden"><span><strong>Fictional demo</strong> · Original H+H workflows. Changes reset on refresh. Use sample data only.</span><div className="flex items-center gap-3"><label>View as <select aria-label="Demo role" value={userRole ?? 'owner'} onChange={e => { localStorage.setItem('hh_user_role', e.target.value); window.location.assign(new URL(e.target.value === 'staff' ? '/market-events' : '/', window.location.origin).href); }} className="min-h-10 rounded border border-amber-300 bg-white px-2"><option value="owner">Owner</option><option value="staff">Staff</option></select></label><button className="min-h-10 underline underline-offset-4" onClick={() => { if (window.confirm('Reset all fictional changes in this tab?')) window.location.reload(); }}>Reset demo</button></div></div>}
         {/* Header bar */}
         <header className="app-safe-header h-16 border-b border-[#ece5da] bg-white/95 backdrop-blur-sm flex items-center justify-between px-3 sm:px-6 shrink-0 print:hidden shadow-xs z-20">
           <div className="flex items-center gap-4">

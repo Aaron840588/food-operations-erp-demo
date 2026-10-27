@@ -3,6 +3,10 @@ import test from "node:test";
 
 import { getProductBusinessCategory, getProductSizeGroup } from "./utils.ts";
 
+test('explicit spread categories stay visible for new sample SKUs', () => {
+  assert.equal(getProductBusinessCategory({ sku: 'PESTO-180', product_name: 'Basil pesto', category: 'Spreads & Sauces' }), 'Spreads & Sauces');
+});
+
 test("sandwich SKU evidence wins over generic Sweet or Savory source categories", () => {
   assert.equal(
     getProductBusinessCategory({

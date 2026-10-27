@@ -5,7 +5,7 @@
 ## 1. Core architecture and code rules
 
 1. **Next.js and frontend**
-   - Framework: Next.js App Router `16.4.2` with Turbopack.
+   - Framework: Next.js App Router `16.4.3` with Turbopack.
    - Styling: Tailwind CSS v4 with the existing warm sand design tokens. Reuse surrounding components and patterns.
    - State and data: React hooks, SWR, and bounded local fallbacks for read performance.
    - Current sales lineup: customer-facing and sales product lists must contain only active **Spreads & Sauces** and **Sandwiches & Salads** SKUs.

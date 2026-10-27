@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { PUBLIC_DEMO } from './demoWorkspace';
 
 const PUBLIC_VAPID_KEY = "BJC9vbn9P7m7-ux3LXC3Nf0A66PRdaFR3UFoekjeq8GTcI9SUja8dtKoICpcro7Ufl9F4FVGkR-fKZjYcpJh8Yo";
 
@@ -10,6 +11,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 }
 
 export async function configurePushNotifications(): Promise<NotificationPermission> {
+  if (PUBLIC_DEMO) throw new Error('Browser push requires a connected private deployment. The public demo sends no notifications.');
   if (typeof window === "undefined" || !("Notification" in window)) {
     throw new Error("Push notifications are not supported on this device or browser.");
   }

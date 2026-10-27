@@ -12,6 +12,10 @@ load_dotenv(dotenv_path)
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(BASE_DIR), "happy_noether.db")
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or f"sqlite:///{DEFAULT_DB_PATH}"
+PUBLIC_DEMO_MODE = os.getenv("PUBLIC_DEMO_MODE", "true").lower() != "false"
+if PUBLIC_DEMO_MODE:
+    # The public portfolio build cannot reach a configured private database.
+    DATABASE_URL = "sqlite://"
 
 # Clean prefix if the user accidentally pasted "DATABASE_URL=" as part of the value
 if DATABASE_URL.startswith("DATABASE_URL="):

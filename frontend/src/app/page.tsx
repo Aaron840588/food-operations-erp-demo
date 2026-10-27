@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import OperationsDashboard from '@/components/OperationsDashboard';
 export default function Page() {
-  redirect("/demo");
+  return <OperationsDashboard />;
 }

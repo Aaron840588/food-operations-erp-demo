@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { api, type DiscountTierOut, type UserOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { PUBLIC_DEMO } from "@/lib/demoWorkspace";
 import { configurePushNotifications } from "@/lib/pushNotifications";
 import { formatCurrency } from "@/lib/utils";
 import { 
@@ -138,13 +139,13 @@ export default function SettingsPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername || !newPasscode) return;
+    if (!newUsername || (!PUBLIC_DEMO && !newPasscode)) return;
 
     setCreatingUser(true);
     try {
       await api.createUser({
         username: newUsername,
-        password: newPasscode,
+        password: PUBLIC_DEMO ? "sample-account-no-login" : newPasscode,
         role: newRole as "owner" | "staff",
         hourly_rate: Number(newHourlyRate) || 0,
       });
@@ -432,13 +433,14 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3">
                     <ShieldAlert className="text-danger animate-pulse shrink-0" size={24} />
                     <div>
-                      <CardTitle className="text-lg font-heading font-black text-danger">Reset Testing Transactions &amp; Logs</CardTitle>
-                      <CardDescription className="text-sm mt-1 text-slate-500">Clear test records and transaction ledgers back to clean empty states:</CardDescription>
+                      <CardTitle className="text-lg font-heading font-black text-danger">{PUBLIC_DEMO ? "Restore Sample Workspace" : "Reset Testing Transactions & Logs"}</CardTitle>
+                      <CardDescription className="text-sm mt-1 text-slate-500">{PUBLIC_DEMO ? "Start again with the original fictional records." : "Clear test records and transaction ledgers back to clean empty states:"}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6 md:p-8 space-y-5">
                   <div className="p-5 bg-white border border-rose-200 rounded-2xl text-xs md:text-sm font-semibold text-rose-800 leading-relaxed space-y-2">
+                    {PUBLIC_DEMO ? <p>This resets changes in this tab, including sample sales and cashier records, and restores the fictional catalog and starting stock. Download a sample backup first if you want to keep a copy.</p> : <>
                     <p><strong>Danger: highly critical system override</strong></p>
                     <p>This action will permanently delete all dynamic test records and transactional logs, including:</p>
                     <ul className="list-disc pl-5 mt-1.5 space-y-1 text-slate-600 text-xs">
@@ -450,17 +452,18 @@ export default function SettingsPage() {
                       <li>Resets Warehouse inventory stock balances back to 0</li>
                     </ul>
                     <p className="mt-3 text-rose-700"><strong>Note:</strong> Your master static catalog (Products SKU definitions, Raw Ingredients listings, nested Recipes formulas, Supplier directories, and User accounts) will be completely kept so you don&apos;t have to re-enter them!</p>
+                    </>}
                   </div>
                   <div className="flex justify-end pt-3">
                     <Button
                       onClick={async () => {
-                        const confirmWipe = confirm("Danger: wiping database transactional records.\nAre you absolutely sure you want to permanently delete all test orders, deliveries, market POS sales, and audit ledgers?");
+                        const confirmWipe = confirm(PUBLIC_DEMO ? "Reset this tab to the original fictional sample records?" : "Danger: wiping database transactional records.\nAre you absolutely sure you want to permanently delete all test orders, deliveries, market POS sales, and audit ledgers?");
                         if (!confirmWipe) return;
                         
                         setResetLoading(true);
                         try {
                           await api.resetTestData();
-                          alert("Database reset completed. Transaction lists, POS terminals, and analytics records were cleared.");
+                          alert(PUBLIC_DEMO ? "Sample workspace restored." : "Database reset completed. Transaction lists, POS terminals, and analytics records were cleared.");
                           window.location.reload();
                         } catch (err: unknown) {
                           alert(`Wipe Authorization Failed: ${getErrorMessage(err)}`);
@@ -474,7 +477,7 @@ export default function SettingsPage() {
                       isLoading={resetLoading}
                       leftIcon={<Trash2 size={16} />}
                     >
-                      {resetLoading ? "Clearing database..." : "Clear Testing Data & Reset Logs"}
+                      {PUBLIC_DEMO ? (resetLoading ? "Restoring sample..." : "Restore Sample Workspace") : (resetLoading ? "Clearing database..." : "Clear Testing Data & Reset Logs")}
                     </Button>
                   </div>
                 </CardContent>
@@ -515,7 +518,8 @@ export default function SettingsPage() {
                       minLength={8}
                       maxLength={128}
                       placeholder="Enter login passcode..."
-                      value={newPasscode}
+                      value={PUBLIC_DEMO ? "sample-account-no-login" : newPasscode}
+                      readOnly={PUBLIC_DEMO}
                       onChange={(e) => setNewPasscode(e.target.value)}
                       className="w-full text-sm font-bold h-12 text-slate-800"
                     />

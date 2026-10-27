@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PUBLIC_DEMO } from "@/lib/demoWorkspace";
 import {
   AlertTriangle,
   ArrowRight,
@@ -86,6 +87,7 @@ export function GoogleSheetsSyncPanel() {
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
   const refresh = useCallback(async () => {
+    if (PUBLIC_DEMO) { setLoading(false); return; }
     setLoading(true);
     try {
       const statusFilter = filter === "all" ? undefined : filter;
@@ -228,6 +230,7 @@ export function GoogleSheetsSyncPanel() {
     }
   };
 
+  if (PUBLIC_DEMO) return <section id="settings-panel-sheets" role="tabpanel" className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-heading">Google Sheets connection</h2><p className="mt-3 text-sm text-slate-600">This public workspace uses fictional local samples. No Google account is connected. Use Inventory and Recipes to explore price changes without sharing credentials or private spreadsheets.</p></section>;
   return (
     <div id="settings-panel-sheets" role="tabpanel" className="space-y-6">
       <Card className="rounded-3xl border-slate-200 shadow-sm">
@@ -494,7 +497,7 @@ export function GoogleSheetsSyncPanel() {
                         )}
                       </div>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
-                        {change.source_name} · {change.sheet_name} row {change.source_row_number}
+                        {change.source_name} Â· {change.sheet_name} row {change.source_row_number}
                       </p>
                     </div>
                     <span className="text-[10px] font-semibold text-slate-400">{formatDateTime(change.detected_at)}</span>
@@ -578,7 +581,7 @@ export function GoogleSheetsSyncPanel() {
                         variant={field.approval_mode === "auto_apply" ? "success" : riskVariant(field.risk_level)}
                       >
                         {field.destination_field.replaceAll("_", " ")}
-                        {field.approval_mode === "auto_apply" ? " · auto" : ""}
+                        {field.approval_mode === "auto_apply" ? " Â· auto" : ""}
                       </Badge>
                     ))}
                   </div>
@@ -602,7 +605,7 @@ export function GoogleSheetsSyncPanel() {
                   </div>
                   <p className="mt-2 text-[11px] font-semibold text-slate-500">{formatDateTime(run.started_at)}</p>
                   <p className="mt-1 text-[11px] font-bold text-slate-700">
-                    {Number(run.summary.changes_detected || 0)} detected · {Number(run.summary.auto_applied || 0)} auto-applied · {Number(run.summary.invalid_rows || 0)} invalid
+                    {Number(run.summary.changes_detected || 0)} detected Â· {Number(run.summary.auto_applied || 0)} auto-applied Â· {Number(run.summary.invalid_rows || 0)} invalid
                   </p>
                   <p className="mt-1 text-[10px] font-semibold text-slate-400">
                     {run.trigger_type === "owner_poll" ? "Automatic owner check" : "Manual check"}

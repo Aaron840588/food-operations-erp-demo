@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Dict, List, Optional, Tuple
 import logging
 import math
+from contextvars import ContextVar
 from .. import models
 
 logger = logging.getLogger("hh_backend")
@@ -10,6 +11,7 @@ logger = logging.getLogger("hh_backend")
 _analysis_cache = None
 _analysis_cache_time = 0.0
 CACHE_TTL = 300.0  # 5 minutes TTL, invalidated on data updates
+isolated_demo_costing = ContextVar("isolated_demo_costing", default=False)
 
 # Recipe quantities and purchase-pack sizes are entered by people and have
 # accumulated several harmless spelling variants over time.  Each factor is
@@ -261,12 +263,16 @@ class CostingService:
 
     @staticmethod
     def clear_costing_cache():
+        if isolated_demo_costing.get():
+            return
         global _analysis_cache, _analysis_cache_time
         _analysis_cache = None
         _analysis_cache_time = 0.0
 
     @staticmethod
     def get_analysis_cache():
+        if isolated_demo_costing.get():
+            return None
         global _analysis_cache, _analysis_cache_time
         import time
         if _analysis_cache is not None and (time.time() - _analysis_cache_time) < CACHE_TTL:
@@ -275,6 +281,8 @@ class CostingService:
 
     @staticmethod
     def set_analysis_cache(data):
+        if isolated_demo_costing.get():
+            return
         global _analysis_cache, _analysis_cache_time
         import time
         _analysis_cache = data
