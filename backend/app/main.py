@@ -318,7 +318,7 @@ def run_startup_migrations():
     except Exception as e:
         logger.warning(f"Startup migration warning: {e}")
 
-APP_VERSION = "2.8.0"
+APP_VERSION = "2.9.0"
 
 app = FastAPI(
     title="Handmade+Homemade Hub API",
