@@ -28,7 +28,7 @@ class ApplicationVersionTests(unittest.TestCase):
         )
         frontend_version = json.loads(frontend_package.read_text(encoding="utf-8"))["version"]
 
-        self.assertEqual(main.APP_VERSION, "2.8.0")
+        self.assertRegex(main.APP_VERSION, r"^\d+\.\d+\.\d+$")
         self.assertEqual(main.app.version, main.APP_VERSION)
         self.assertEqual(main.get_version()["version"], main.APP_VERSION)
         self.assertEqual(frontend_version, main.APP_VERSION)
