@@ -106,7 +106,7 @@ def seed(db: Session):
         models.Supplier(id=1, name="Sample pantry supplier", contact_person="Fictional supplier", email="pantry@example.invalid"),
         models.Warehouse(id=1, name="Main Facility", location="Sample kitchen"),
         models.Warehouse(id=2, name="Sample market stall", location="Fictional market"),
-        models.ConsignmentPartner(id=1, name="Sample cafÃ©", discount_rate=0.1, minimum_order_amount=0),
+        models.ConsignmentPartner(id=1, name="Sample cafe", discount_rate=0.1, minimum_order_amount=0),
         models.ConsignmentPartner(id=2, name="Sample grocery", discount_rate=0.12, minimum_order_amount=0),
         models.DiscountTier(min_subtotal=0, discount_percentage=10),
         models.DiscountTier(min_subtotal=2000, discount_percentage=15),

@@ -34,6 +34,6 @@ export default function LayoutClient({
     }
     queueMicrotask(() => setReady(true));
   }, []);
-  if (!ready) return <p className="p-8">Opening sample workspaceâ€¦</p>;
+  if (!ready) return <p className="p-8">Opening sample workspace...</p>;
   return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
 }
