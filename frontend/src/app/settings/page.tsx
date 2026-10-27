@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { api, type DiscountTierOut, type UserOut } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { PUBLIC_DEMO } from "@/lib/demoWorkspace";
 import { configurePushNotifications } from "@/lib/pushNotifications";
 import { formatCurrency } from "@/lib/utils";
 import { 
@@ -138,13 +139,13 @@ export default function SettingsPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername || !newPasscode) return;
+    if (!newUsername || (!PUBLIC_DEMO && !newPasscode)) return;
 
     setCreatingUser(true);
     try {
       await api.createUser({
         username: newUsername,
-        password: newPasscode,
+        password: PUBLIC_DEMO ? "sample-account-no-login" : newPasscode,
         role: newRole as "owner" | "staff",
         hourly_rate: Number(newHourlyRate) || 0,
       });
@@ -515,7 +516,8 @@ export default function SettingsPage() {
                       minLength={8}
                       maxLength={128}
                       placeholder="Enter login passcode..."
-                      value={newPasscode}
+                      value={PUBLIC_DEMO ? "sample-account-no-login" : newPasscode}
+                      readOnly={PUBLIC_DEMO}
                       onChange={(e) => setNewPasscode(e.target.value)}
                       className="w-full text-sm font-bold h-12 text-slate-800"
                     />

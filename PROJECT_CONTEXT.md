@@ -15,7 +15,7 @@ This repository is an AI-assisted food-operations portfolio prototype. It must c
 
 ## Public status
 
-The public entry and `/login` redirect to `/demo`, a fictional React-memory workspace for inventory, order fulfilment and costing. It has no API client, auth, synchronization, persistence or private integrations. The public route bypasses the authenticated layout entirely. All data resets on refresh. The separate hosted API remains unavailable; database recovery and server-authorized guest sessions are still required before exposing the full ERP. Never reuse private production data or credentials. Preserve the isolated demo boundary.
+The original H+H screens now use `/api/demo-workspace`, an isolated stateless sample transport. Each call creates SQLite from `resources/demo-schema.sql`, restores bounded parameterized rows, executes the original handler using a separate dependency provider, and returns a compressed snapshot. The frontend holds snapshots only in memory and serializes requests. Production dependency overrides are never modified. Costing caches are bypassed in the sample context. The public server ignores private DATABASE_URL/POSTGRES_URL configuration and skips startup migrations. Cloud connections, private uploads and push delivery are outside the demo. The previous reduced UI was removed; `/demo` redirects to the original dashboard. Preserve these isolation boundaries.
 
 The built-in timesheet calculator contains explicitly synthetic JSON examples. Uploaded workbooks are parsed in memory for an authorized session; never commit uploads. All original private payroll material has been removed from the branch, but historical commits may retain it.
 

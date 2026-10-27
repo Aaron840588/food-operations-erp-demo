@@ -4,22 +4,21 @@ An AI-assisted portfolio prototype exploring inventory, recipe costing, purchasi
 
 [Case study](https://aarontagapan.vercel.app/work/hh-hub) · [Hosted demo](https://food-operations-erp-demo.vercel.app)
 
-## Public demo — October 23, 2026
+## Public demo — October 27, 2026
 
-The public entry opens a self-contained fictional workspace at `/demo`. No account, database, credentials or cloud services are required. Changes exist only in React memory and reset on refresh or via **Reset demo**.
+The public entry uses the original H+H interface: dashboard, inventory, recipe costing, production, wholesale, consignment, Market Events, facility tasks, timesheets, preorders and settings. `/demo` and `/login` redirect to the original dashboard. Switch between sample Owner and Staff views in the demo banner.
 
-- **Inventory:** search finished goods and receive sample stock with quantity validation.
-- **Orders:** queue, fulfil and cancel orders for fixed fictional customers. Fulfilment checks and deducts stock once; prices and costs are snapshotted when queued.
-- **Overview:** sales, gross profit, stock totals and activity reflect the current session.
-- **Costing:** explore sample batch costs, selling prices and gross margins independently of orders.
+The frontend sends serialized operations to `/api/demo-workspace`. Each request creates an isolated in-memory SQLite database, restores a bounded sample snapshot, runs the existing ERP business handler, then returns a new snapshot. The snapshot stays in the browser document's memory; refreshing restores fictional seed records. Browser-side requests are serialized to preserve updates. There is no shared demo database, private production connection, or real account login. Sample role selection grants access only to that visitor's fictional data.
 
-Try receiving 10 tomato-sauce jars, fulfilling order #1002, then returning to Overview. The workspace is a focused simulation, not the full ERP: it excludes ingredient purchasing, FIFO lots, production, payroll, authentication and real payments. Gross profit excludes labour, overhead, tax and delivery.
+The public backend defaults to `PUBLIC_DEMO_MODE=true`, ignores configured production database URLs, and skips production startup migrations. The frontend defaults to `NEXT_PUBLIC_DEMO_MODE=true`. A private deployment must explicitly set both flags to `false` and configure a separate database and JWT secret. Never put production credentials or private records into this portfolio deployment.
 
-The separate database-backed prototype remains unavailable. Its protected routes and API authorization are unchanged; reopening those requires an isolated synthetic database and server-authorized guest sessions. Never connect private production records or credentials to this public demo.
+Google Sheets connections, push subscriptions and private file/photo uploads are deliberately unavailable in the public sample. Their panels explain the limitation. Existing synthetic timesheet calculator examples remain available. Browser downloads contain sample data only. Real device printing, native sharing and external account integrations require separate validation.
+
+The former reduced interface was removed. This release restores the original screens and business logic; it does not claim that private external integrations are connected.
 
 ## Stack and architecture
 
-- Frontend: Next.js 16.4.2, React 19.2.4, TypeScript, Tailwind CSS, SWR.
+- Frontend: Next.js 16.4.3, React 19.3.1, TypeScript, Tailwind CSS, SWR.
 - Backend: Python 3.12, FastAPI, Pydantic, SQLAlchemy; exact versions in `backend/requirements.txt`.
 - Deployment: root `vercel.json` routes `/api/*` to FastAPI and other requests to Next.js.
 - Authentication: server-enforced role checks, in-memory access tokens, HttpOnly refresh cookies.

@@ -1,3 +1,13 @@
+# Original H+H demo restored — October 27, 2026
+
+Restore the original interface and route it through an isolated fictional SQLite workspace using the existing ERP handlers. Remove the reduced demo interface. Preserve role checks, recipe costing, stock mirrors, sale-time snapshots and production idempotency. Demo state stays in browser memory and resets on refresh. Public mode skips production startup writes and ignores private database configuration.
+
+Fix Vercel asset routing so Next.js scripts and styles load before the legacy catch-all. Add a public deployment asset check and CI browser screenshots. External account connections, push delivery and private uploads remain explicitly unavailable in the public sample.
+
+Validation includes the existing backend suite plus sample-isolation, invalid-state, parallel-visitor, staff-permission and connected stock/wholesale/consignment/production regressions. Browser CI exercises original-screen navigation, tasks, sales and mobile navigation. Production evidence must be checked independently after merging.
+
+---
+
 # Fictional interactive demo — October 23, 2026
 
 Replace the public maintenance entry with a browser-only inventory, order and costing simulation. Root and login entry routes redirect to `/demo`; the authenticated application layout never mounts on this route. Synthetic records live only in memory. No database, credentials, API writes, customer uploads or cloud integrations are used.

@@ -2,6 +2,7 @@ import os
 import jwt
 from datetime import datetime, timedelta, timezone
 import bcrypt
+import secrets
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -15,6 +16,8 @@ ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
 load_dotenv(os.path.join(ROOT_DIR, ".env"))
 
 SECRET_KEY = os.environ.get("JWT_SECRET")
+if not SECRET_KEY and os.getenv("PUBLIC_DEMO_MODE", "true").lower() != "false":
+    SECRET_KEY = secrets.token_hex(32)
 if not SECRET_KEY:
     raise KeyError("CRITICAL CONFIGURATION ERROR: The 'JWT_SECRET' environment variable must be set in your .env file or Vercel dashboard. Default insecure fallbacks are disabled for security compliance.")
 ALGORITHM = os.getenv("JWT_ALGORITHM") or "HS256"

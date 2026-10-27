@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { offlineDb } from "./indexedDb";
+import { PUBLIC_DEMO, demoRequest } from './demoWorkspace';
 import {
   getUnconfirmedMutationMessage,
   isReplayUnsafeMutation,
@@ -1159,6 +1160,7 @@ async function parseJsonResponse(
 }
 
 async function fetchJson(path: string, options?: RequestInit): Promise<any> {
+  if (PUBLIC_DEMO) return demoRequest(path, options);
   const url = `${API_BASE_URL}${path}`;
   const method = options?.method || "GET";
 
@@ -1677,6 +1679,11 @@ export const api = {
     body: JSON.stringify({ action, resolution_note: resolutionNote?.trim() || null }),
   }),
   getBackupBlob: async (): Promise<Blob> => {
+    if (PUBLIC_DEMO) {
+      const products = await demoRequest('/products');
+      const ingredients = await demoRequest('/raw-ingredients');
+      return new Blob([JSON.stringify({ notice: 'Fictional sample export only', products, ingredients }, null, 2)], { type: 'application/json' });
+    }
     const token = activeAccessToken;
     const headers: Record<string, string> = {};
     if (token) {
@@ -1844,6 +1851,7 @@ export const api = {
   // ----------------------------------------------------
   getOfflineActionsCount: (): Promise<number> => offlineDb.getOfflineActions().then(a => a.length),
   syncOfflineChanges: async (): Promise<{ success: number; failed: number; discarded: number }> => {
+    if (PUBLIC_DEMO) return { success: 0, failed: 0, discarded: 0 };
     if (typeof window === "undefined") return { success: 0, failed: 0, discarded: 0 };
 
     const actions = await offlineDb.getOfflineActions();

@@ -12,6 +12,7 @@ from .database import (
     Base,
     SessionLocal,
     sync_warehouse_stock_for_main_facility,
+    PUBLIC_DEMO_MODE,
 )
 from . import models, schemas, auth
 from .routers import costing, production, consignment, reseller, tasks, gift_sets, market_events, timesheets, sheet_sync, preorders
@@ -44,6 +45,8 @@ def sanitize_html(text_val: str) -> str:
 _migrations_executed = False
 
 def run_startup_migrations():
+    if PUBLIC_DEMO_MODE:
+        return
     global _migrations_executed
     configured_app = globals().get("app")
     if configured_app is not None and get_db in configured_app.dependency_overrides:
@@ -349,6 +352,8 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() != "false"
 
 @app.on_event("startup")
 def seed_default_users():
+    if PUBLIC_DEMO_MODE:
+        return
     # Test clients override the request database before entering the app
     # lifespan. Startup writes must respect that isolation boundary instead of
     # mutating the developer's ignored SQLite database behind the test suite.
@@ -526,6 +531,8 @@ def sync_warehouse_stocks_on_startup():
     raw_ingredients on every cold start. This handles migrations where records
     were inserted directly without going through the sync function.
     """
+    if PUBLIC_DEMO_MODE:
+        return
     db = SessionLocal()
     try:
         from .database import sync_warehouse_stock_for_main_facility
@@ -2388,3 +2395,7 @@ def force_refresh_all_devices(current_user: models.User = Depends(auth.require_o
     import time
     SYSTEM_UPDATE_TIMESTAMP = f"force-{time.time()}"
     return {"message": "Force refresh signal sent to all devices", "update_timestamp": SYSTEM_UPDATE_TIMESTAMP}
+
+# Public simulation uses a separate database and dependency provider per request.
+from .demo_sandbox import install_demo_sandbox
+install_demo_sandbox(app)

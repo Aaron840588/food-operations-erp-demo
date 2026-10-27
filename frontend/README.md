@@ -1,4 +1,4 @@
-> Public demo release, October 23, 2026: the entry redirects to the self-contained fictional `/demo` workspace. No backend is required for this route. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
+> Public demo release, October 23, 2026: the original interface uses an isolated fictional API workspace. Run FastAPI locally with the frontend; `/demo` redirects to the dashboard. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
 
 # H+H Hub frontend
 
