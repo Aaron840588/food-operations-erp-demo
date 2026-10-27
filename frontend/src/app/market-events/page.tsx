@@ -4471,7 +4471,7 @@ export default function MarketEventsPage() {
               <div>
                 <span className="font-heading font-black text-xl tracking-widest text-slate-900 block leading-none">H+H HUB</span>
                 <span className="text-[10px] text-slate-455 uppercase tracking-widest font-black block mt-2">MARKET EVENT CLOSEOUT SUMMARY</span>
-                <span className="text-xs text-slate-400 font-semibold block mt-1">Cambria, Bay, Laguna, Brgy. Sto. Domingo</span>
+                <span className="text-xs text-slate-400 font-semibold block mt-1">Fictional sample invoice - no payment is collected</span>
               </div>
               <div className="text-right text-xs font-semibold text-slate-500 space-y-1">
                 <span className="font-heading font-black text-slate-800 text-sm uppercase tracking-widest block mb-2">OFFICIAL RECORD</span>

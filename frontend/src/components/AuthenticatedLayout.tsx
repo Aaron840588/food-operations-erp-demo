@@ -540,7 +540,7 @@ export default function LayoutClient({ children }: LayoutClientProps) {
   );
 
   if (isPublicPage) {
-    return <>{children}</>;
+    return <>{PUBLIC_DEMO && <p className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">Fictional sample form. Use sample contact details only. No real order or payment is processed.</p>}{children}</>;
   }
 
   const roleRedirect = userRole ? getRoleRouteRedirect(userRole, pathname) : null;

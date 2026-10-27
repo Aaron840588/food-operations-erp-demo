@@ -145,6 +145,8 @@ export function getProductBusinessCategory(p: ProductIdentity): string {
     name.includes("spread") ||
     name.includes("sauce") ||
     name.includes("oil") ||
+    cat.includes("spread") ||
+    cat.includes("sauce") ||
     cat.includes("sweet") ||
     cat.includes("savory")
   ) {
