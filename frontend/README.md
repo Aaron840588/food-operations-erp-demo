@@ -1,10 +1,10 @@
-> Public demo release, October 23, 2026: the original interface uses an isolated fictional API workspace. Run FastAPI locally with the frontend; `/demo` redirects to the dashboard. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope. Older feature/version notes below are historical.
+> Public demo release, October 27, 2026: the original interface uses an isolated fictional API workspace. Run FastAPI locally with the frontend; `/demo` redirects to the dashboard. See [root README](../README.md) and [release notes](../RELEASE_NOTES.md) for current scope.
 
 # H+H Hub frontend
 
-Current application version: **2.8.0**.
+Current application version: **2.9.0**.
 
-Next.js `16.4.2` App Router client for H+H Hub. The frontend and FastAPI backend deploy as one Vercel project from the repository root.
+Next.js `16.4.3` and React `19.3.1` App Router client for H+H Hub, using Node.js 24. The frontend and FastAPI backend deploy as one Vercel project from the repository root.
 
 ## Local development
 
@@ -15,7 +15,7 @@ cd frontend
 npm.cmd run dev
 ```
 
-The separate authenticated prototype needs a backend and uses same-origin `/api` requests. During local development, `next.config.ts` rewrites `/api/*` to `http://127.0.0.1:8000`; `NEXT_PUBLIC_API_URL` may explicitly override the base when required.
+Both public and private modes need FastAPI. Run `uvicorn backend.app.main:app --reload` from the repository root in a second terminal with the Python environment active. During local development, `next.config.ts` rewrites `/api/*` to `http://127.0.0.1:8000`. Public mode sends operations only to the isolated `/api/demo-workspace` transport.
 
 ## Quality checks
 
@@ -33,7 +33,7 @@ Every release requires passing regression tests, zero ESLint warnings, zero Type
 
 - `frontend/package.json` provides the initial client version.
 - `GET /api/version` returns the canonical backend version and release timestamp.
-- `LayoutClient` displays the server version and reloads when the release timestamp changes.
+- Private mode polls the server version and reloads when the release timestamp changes. Public mode uses a fixed sample version and does not poll or register service workers.
 - Backend tests verify that the frontend package and FastAPI versions match.
 
 ## Offline behavior
@@ -41,7 +41,7 @@ Every release requires passing regression tests, zero ESLint warnings, zero Type
 - Read caches may provide immediate previously loaded data.
 - Generic mutation replay is retired and sanitized.
 - Authentication, administrative, inventory, reseller, consignment, and destructive writes are online-only.
-- Only Market POS has a dedicated offline sales journal with stable client references and receipt reconciliation.
+- Only Market POS has a dedicated offline sales journal with stable client references and receipt reconciliation. Public mode uses memory instead of persistent IndexedDB; refreshing resets its sample journal.
 
 ## UX and accessibility
 
@@ -54,7 +54,7 @@ Every release requires passing regression tests, zero ESLint warnings, zero Type
 Merging repository `main` triggers Vercel production deployment. After release:
 
 1. Confirm the deployment source SHA and `READY` state.
-2. Verify `/api/health` reports `healthy`, `online`, and `production`.
-3. Verify `/api/version` reports the intended release.
-4. Smoke-test the public preorder catalog and mobile review flow.
-5. Check Vercel runtime errors.
+2. Run `python scripts/check_deployment.py https://food-operations-erp-demo.vercel.app` from the root to verify HTML and referenced scripts/styles.
+3. Verify the isolated `/api/demo-workspace` operations and intended `/api/version` release. Private database health is not the public demo readiness signal.
+4. Check original-screen navigation, stock/sale/production behavior, JSON backup download and mobile navigation.
+5. Review CI screenshots and runtime errors. Real-device printing, sharing and private integrations require separate validation.
