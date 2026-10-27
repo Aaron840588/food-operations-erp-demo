@@ -1117,7 +1117,7 @@ export default function ResellersPage() {
                 <div className="space-y-1.5">
                   <span className="text-xs print:text-[10px] text-slate-500 font-black uppercase tracking-wider block">Payment Instructions</span>
                   <p>Please request payment details from the H+H owner.</p>
-                  <p className="text-[10px] print:text-[8px] text-slate-455 italic">Please email payment receipts to billing@hplusfood.com.</p>
+                  <p className="text-[10px] print:text-[8px] text-slate-455 italic">Fictional sample invoice. No payment or receipt submission is required.</p>
                 </div>
                 <div className="flex flex-col justify-end items-end h-32 print:h-12">
                   <div className="w-56 print:w-44 border-t border-slate-400 text-center pt-3 print:pt-1 text-[10px] print:text-[8px] text-slate-500 font-black uppercase tracking-widest">
