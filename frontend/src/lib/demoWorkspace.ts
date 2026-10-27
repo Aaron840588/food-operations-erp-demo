@@ -14,6 +14,10 @@ export async function demoRequest(
   options?: RequestInit,
 ): Promise<unknown> {
   const run = async () => {
+    if (path === '/auth/me') {
+      const role = demoRole();
+      return { id: role === 'owner' ? 1 : 2, username: role === 'owner' ? 'Sample Owner' : 'Sample Staff', role, is_active: true, hourly_rate: role === 'owner' ? 100 : 85 };
+    }
     if (path === "/version")
       return { version: "2.9.0-demo", update_timestamp: "demo-session" };
     if (path === "/auth/logout") return { message: "Sample session closed." };

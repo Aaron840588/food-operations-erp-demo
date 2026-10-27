@@ -441,7 +441,7 @@ export default function PlannerPage() {
   };
 
   return (
-    <main className="space-y-5 pb-32 print:pb-0 lg:space-y-6 lg:pb-10">
+    <div className="space-y-5 pb-32 print:pb-0 lg:space-y-6 lg:pb-10">
       <header className="rounded-3xl border border-[#dfd5c6] bg-[linear-gradient(135deg,#fff_0%,#fbf7ef_100%)] p-5 shadow-sm sm:p-6 print:border-0 print:p-0 print:shadow-none">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
@@ -1174,7 +1174,7 @@ export default function PlannerPage() {
           }
         />
       )}
-    </main>
+    </div>
   );
 }
 
